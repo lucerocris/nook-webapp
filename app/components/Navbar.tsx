@@ -1,8 +1,12 @@
-"use client";
+import { createClient } from "@/lib/supabase/server";
+import NavbarShell from "./NavbarShell";
 
-import { useEffect, useRef, useState } from "react";
-import Image from "next/image";
-import Link from "next/link";
+export default async function Navbar() {
+  const supabase = await createClient();
+  const { data } = await supabase.auth.getClaims();
+  const email =
+    typeof data?.claims?.email === "string" ? data.claims.email : null;
+
 
 type AuthStep = "email" | "login" | "signup";
 
