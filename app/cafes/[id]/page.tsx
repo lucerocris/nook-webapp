@@ -3,19 +3,20 @@ import Image from "next/image";
 import { notFound } from "next/navigation";
 import {
   CaretRight,
-  GraduationCap,
   Heart,
   MapPin,
   NavigationArrow,
   ShareNetwork,
   Star,
-  WifiHigh,
 } from "@phosphor-icons/react/dist/ssr";
 
+import BusinessHoursDropdown from "@/app/components/BusinessHoursDropdown";
 import CafeDetailSkeleton from "@/app/components/CafeDetailSkeleton";
 import { formatPrice, getCafeById, getMenuItems } from "@/lib/data/cafes";
 import { getCurrentUserId } from "@/lib/data/auth";
-import type { CafeDetails, MenuItem, Review } from "@/lib/data/cafes-mappers";
+import type { MenuItem, Review, Tag } from "@/lib/data/cafes-mappers";
+import { getTagIcon } from "@/lib/utils/tag-icon";
+import { parseOperatingHours } from "@/lib/utils/hours";
 
 type Props = {
   params: Promise<{ id: string }>;
@@ -45,8 +46,6 @@ async function CafeDetailContent({ params }: Props) {
   const gallery = [cafe.featuredImageUrl, ...cafe.photoUrls].filter(
     (url): url is string => typeof url === "string" && url.length > 0,
   );
-  const mainImage = gallery[0] ?? null;
-  const gridImages = gallery.slice(1, 5);
 
   const menuHighlights = menu.slice(0, 4);
   const visibleReviews = cafe.reviews.slice(0, 4);
@@ -55,8 +54,11 @@ async function CafeDetailContent({ params }: Props) {
     .slice(0, 2);
 
   const distanceLabel = null;
-  const hoursLabel = formatOperatingHours(cafe.operatingHours);
-  const area = cafe.neighborhood ?? cafe.city;
+  const operatingHours = parseOperatingHours(cafe.operatingHours);
+  const fullAddress = [cafe.address, cafe.neighborhood, cafe.city]
+    .filter((part): part is string => typeof part === "string" && part.length > 0)
+    .join(", ");
+  const mapsUrl = `https://www.google.com/maps/dir/?api=1&destination=${cafe.lat},${cafe.lng}`;
 
   return (
     <main className="flex-1 pt-24 pb-16">
@@ -94,33 +96,8 @@ async function CafeDetailContent({ params }: Props) {
           </div>
         </section>
 
-        {mainImage ? (
-          <section className="mt-6 grid h-[280px] gap-2 overflow-hidden rounded-sm sm:h-[420px] lg:grid-cols-[1.35fr_1fr]">
-            <div className="relative hidden bg-zinc-100 lg:block">
-              <Image
-                src={mainImage}
-                alt={cafe.name}
-                fill
-                priority
-                sizes="(min-width: 1024px) 60vw, 100vw"
-                className="object-cover"
-              />
-            </div>
-
-            <div className="grid grid-cols-2 gap-2">
-              {gridImages.map((image, index) => (
-                <div key={image} className="relative bg-zinc-100">
-                  <Image
-                    src={image}
-                    alt={`${cafe.name} gallery ${index + 1}`}
-                    fill
-                    sizes="(min-width: 1024px) 25vw, 50vw"
-                    className="object-cover"
-                  />
-                </div>
-              ))}
-            </div>
-          </section>
+        {gallery.length > 0 ? (
+          <CafeGallery cafeName={cafe.name} images={gallery} />
         ) : null}
 
         <div className="mt-8 grid gap-9 lg:grid-cols-[minmax(0,1fr)_410px]">
@@ -183,36 +160,48 @@ async function CafeDetailContent({ params }: Props) {
               <div className="mt-5 grid gap-7 text-sm text-[#101514] sm:grid-cols-3">
                 <AmenityList
                   title="Amenities"
-                  items={cafe.tags
-                    .filter((tag) => tag.category === "amenity")
-                    .map((tag) => tag.name)}
+                  items={cafe.tags.filter(
+                    (tag) => tag.category === "amenities",
+                  )}
                 />
                 <AmenityList
                   title="Best For"
-                  items={cafe.tags
-                    .filter((tag) => tag.isFeatured)
-                    .map((tag) => tag.name)}
+                  items={cafe.tags.filter((tag) => tag.category === "best_for")}
                 />
-                <AmenityList title="Vibe" items={[]} />
+                <AmenityList
+                  title="Payment"
+                  items={cafe.tags.filter((tag) => tag.category === "payment")}
+                />
               </div>
             </section>
 
             <section className="mt-10">
               <h2 className="text-lg font-semibold text-[#2f2f2f]">Location</h2>
               <div className="mt-4 flex flex-col gap-4 sm:flex-row sm:items-center">
-                <div className="relative h-48 w-full overflow-hidden rounded-xl bg-zinc-100 sm:w-80">
+                <a
+                  href={mapsUrl}
+                  target="_blank"
+                  rel="noreferrer"
+                  aria-label={`Open ${cafe.name} in Google Maps`}
+                  className="relative block h-48 w-full overflow-hidden rounded-xl bg-zinc-100 sm:w-80"
+                >
                   <Image
                     src="https://images.unsplash.com/photo-1524661135-423995f22d0b?auto=format&fit=crop&w=900&q=80"
                     alt={`${cafe.name} map preview`}
                     fill
                     sizes="(min-width: 640px) 320px, 100vw"
-                    className="object-cover"
+                    className="object-cover transition-transform duration-300 hover:scale-105"
                   />
-                </div>
-                <p className="flex items-center gap-2 text-sm text-[#3b3b3b]">
-                  <MapPin size={16} className="text-[#3A5A40]" />
-                  {area ?? cafe.address}
-                </p>
+                </a>
+                <a
+                  href={mapsUrl}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="flex items-center gap-2 text-sm text-[#3b3b3b] underline-offset-2 transition-colors hover:text-[#31533f] hover:underline"
+                >
+                  <MapPin size={16} className="shrink-0 text-[#3A5A40]" />
+                  {fullAddress || cafe.address}
+                </a>
               </div>
             </section>
 
@@ -265,8 +254,7 @@ async function CafeDetailContent({ params }: Props) {
 
               <div className="mt-5 flex flex-wrap gap-2">
                 {featuredTags.map((tag) => {
-                  const isStudent = /student/i.test(tag.name);
-                  const Icon = isStudent ? GraduationCap : WifiHigh;
+                  const Icon = getTagIcon(tag.name);
                   return (
                     <span
                       key={tag.id}
@@ -279,30 +267,23 @@ async function CafeDetailContent({ params }: Props) {
                 })}
               </div>
 
-              <div className="mt-6 border-t border-[#e5e5e5] pt-6">
-                <button
-                  type="button"
-                  className="flex w-full items-center justify-between text-left"
-                >
-                  <span>
-                    <span className="block text-sm font-medium leading-none text-[#557f55]">
-                      Hours
-                    </span>
-                    <span className="mt-2 block text-xs leading-none text-[#858585]">
-                      {hoursLabel}
-                    </span>
-                  </span>
-                  <CaretRight size={20} className="text-[#858585]" />
-                </button>
-              </div>
-
-              <div className="mt-6 flex items-center gap-4 text-xs leading-none text-[#353535]">
-                <MapPin size={17} className="shrink-0 text-[#31533f]" />
-                <span>{area ?? cafe.address}</span>
-              </div>
+              <BusinessHoursDropdown hours={operatingHours} />
 
               <a
-                href={`https://www.google.com/maps/dir/?api=1&destination=${cafe.lat},${cafe.lng}`}
+                href={mapsUrl}
+                target="_blank"
+                rel="noreferrer"
+                aria-label={`Open ${cafe.name} in Google Maps`}
+                className="mt-6 flex items-start gap-4 text-xs leading-snug text-[#353535] underline-offset-2 transition-colors hover:text-[#31533f] hover:underline"
+              >
+                <MapPin size={17} className="mt-0.5 shrink-0 text-[#31533f]" />
+                <span className="block min-w-0 break-words">
+                  {fullAddress || cafe.address}
+                </span>
+              </a>
+
+              <a
+                href={mapsUrl}
                 target="_blank"
                 rel="noreferrer"
                 className="mt-6 flex h-10 w-full items-center justify-center gap-3 rounded-md bg-[#31533f] px-4 text-sm font-semibold text-white transition-colors hover:bg-[#294635]"
@@ -315,6 +296,89 @@ async function CafeDetailContent({ params }: Props) {
         </div>
       </div>
     </main>
+  );
+}
+
+function CafeGallery({ cafeName, images }: { cafeName: string; images: string[] }) {
+  const total = images.length;
+  const visible = images.slice(0, 5);
+
+  const desktopGridClass =
+    total === 1
+      ? "grid-cols-1"
+      : total === 2
+        ? "grid-cols-2"
+        : "lg:grid-cols-[1.35fr_1fr]";
+
+  const mobileGridClass = total === 1 ? "grid-cols-1" : "grid-cols-2";
+
+  return (
+    <section
+      className={[
+        "mt-6 grid h-[280px] gap-2 overflow-hidden rounded-sm sm:h-[420px]",
+        mobileGridClass,
+        desktopGridClass,
+      ].join(" ")}
+    >
+      {total === 3 ? (
+        <>
+          <GalleryTile src={images[0]} alt={cafeName} priority sizes="(min-width: 1024px) 60vw, 100vw" />
+          <div className="grid h-full grid-rows-2 gap-2">
+            <GalleryTile src={images[1]} alt={`${cafeName} gallery 2`} sizes="(min-width: 1024px) 40vw, 50vw" />
+            <GalleryTile src={images[2]} alt={`${cafeName} gallery 3`} sizes="(min-width: 1024px) 40vw, 50vw" />
+          </div>
+        </>
+      ) : total >= 4 ? (
+        <>
+          <GalleryTile src={images[0]} alt={cafeName} priority sizes="(min-width: 1024px) 60vw, 100vw" />
+          <div className="grid h-full gap-2 grid-cols-2 grid-rows-2">
+            {visible.slice(1).map((image, index) => (
+              <GalleryTile
+                key={image}
+                src={image}
+                alt={`${cafeName} gallery ${index + 2}`}
+                sizes="(min-width: 1024px) 25vw, 50vw"
+              />
+            ))}
+          </div>
+        </>
+      ) : (
+        visible.map((image, index) => (
+          <GalleryTile
+            key={image}
+            src={image}
+            alt={index === 0 ? cafeName : `${cafeName} gallery ${index + 1}`}
+            priority={index === 0}
+            sizes={index === 0 ? "100vw" : "50vw"}
+          />
+        ))
+      )}
+    </section>
+  );
+}
+
+function GalleryTile({
+  src,
+  alt,
+  priority,
+  sizes,
+}: {
+  src: string;
+  alt: string;
+  priority?: boolean;
+  sizes: string;
+}) {
+  return (
+    <div className="relative h-full w-full bg-zinc-100">
+      <Image
+        src={src}
+        alt={alt}
+        fill
+        priority={priority}
+        sizes={sizes}
+        className="object-cover"
+      />
+    </div>
   );
 }
 
@@ -333,18 +397,21 @@ function RatingStars({ rating = 5, size = 13 }: { rating?: number; size?: number
   );
 }
 
-function AmenityList({ title, items }: { title: string; items: string[] }) {
+function AmenityList({ title, items }: { title: string; items: Tag[] }) {
   return (
     <div>
       <h3 className="text-sm font-normal text-[#8b8b8b]">{title}</h3>
       <div className="mt-4 space-y-4">
         {items.length > 0 ? (
-          items.map((item) => (
-            <div key={item} className="flex items-center gap-3">
-              <WifiHigh size={17} className="text-[#101514]" />
-              <span>{item}</span>
-            </div>
-          ))
+          items.map((tag) => {
+            const Icon = getTagIcon(tag.name);
+            return (
+              <div key={tag.id} className="flex items-center gap-3">
+                <Icon size={17} className="text-[#101514]" />
+                <span>{tag.name}</span>
+              </div>
+            );
+          })
         ) : (
           <p className="text-sm text-zinc-400">—</p>
         )}
@@ -399,24 +466,4 @@ function MenuThumbnail({ item }: { item: MenuItem }) {
       />
     </div>
   );
-}
-
-type OperatingHours = CafeDetails["operatingHours"];
-
-function formatOperatingHours(hours: OperatingHours): string {
-  if (!hours || typeof hours !== "object") return "Hours not available";
-  const entries = Object.entries(hours as Record<string, unknown>).slice(0, 7);
-  if (entries.length === 0) return "Hours not available";
-  return entries
-    .map(([day, value]) => {
-      if (value == null) return `${day}: closed`;
-      if (typeof value === "string") return `${day}: ${value}`;
-      if (typeof value === "object" && value !== null) {
-        const obj = value as { open?: string; close?: string; closed?: boolean };
-        if (obj.closed) return `${day}: closed`;
-        if (obj.open && obj.close) return `${day}: ${obj.open}–${obj.close}`;
-      }
-      return `${day}: ${JSON.stringify(value)}`;
-    })
-    .join(" · ");
 }
