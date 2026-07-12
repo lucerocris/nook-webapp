@@ -143,6 +143,37 @@ export type Database = {
         };
         Returns: CafeRpcRow[];
       };
+      get_cafes_near_point: {
+        Args: {
+          p_lat: number;
+          p_lng: number;
+          p_radius_meters: number;
+          p_user_id?: string | null;
+          p_sort?: string | null;
+          p_tag_names?: string[] | null;
+          p_query?: string | null;
+          p_limit?: number | null;
+          p_offset?: number | null;
+        };
+        Returns: CafeRpcRow[];
+      };
+      get_cafes_in_viewport: {
+        Args: {
+          p_min_lat: number;
+          p_min_lng: number;
+          p_max_lat: number;
+          p_max_lng: number;
+          p_user_id?: string | null;
+          p_lat?: number | null;
+          p_lng?: number | null;
+          p_sort?: string | null;
+          p_tag_names?: string[] | null;
+          p_query?: string | null;
+          p_limit?: number | null;
+          p_offset?: number | null;
+        };
+        Returns: CafeRpcRow[];
+      };
       get_menu_items: {
         Args: { p_cafe_id: string };
         Returns: MenuItemRpcRow[];
