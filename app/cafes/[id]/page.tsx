@@ -1,5 +1,6 @@
 import { Suspense } from "react";
 import Image from "next/image";
+import Link from "next/link";
 import { notFound } from "next/navigation";
 import {
   Heart,
@@ -183,12 +184,14 @@ async function CafeDetailContent({ params }: Props) {
                   Reviews
                 </h2>
                 {cafe.reviewCount > visibleReviews.length ? (
+                  <Link href={`/cafes/${id}/reviews`}>
                   <button
                     type="button"
                     className="shrink-0 rounded-full border border-zinc-200 px-4 py-2 text-xs font-medium text-[#3b3b3b] transition-colors hover:bg-zinc-50"
                   >
                     See all reviews
                   </button>
+                  </Link> 
                 ) : null}
               </div>
 
