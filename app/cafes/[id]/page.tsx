@@ -12,7 +12,8 @@ import {
 
 import BusinessHoursDropdown from "@/app/components/BusinessHoursDropdown";
 import CafeDetailSkeleton from "@/app/components/CafeDetailSkeleton";
-import { formatPrice, getCafeById, getMenuItems } from "@/lib/data/cafes";
+import { getCafeById, getMenuItems } from "@/lib/data/cafes";
+import { formatPrice } from "@/lib/utils/format";
 import { getCurrentUserId } from "@/lib/data/auth";
 import type { MenuItem, Review, Tag } from "@/lib/data/cafes-mappers";
 import { getTagIcon } from "@/lib/utils/tag-icon";

@@ -2,7 +2,7 @@
 
 import { useState, useTransition } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { MapPin } from "@phosphor-icons/react/dist/ssr";
+import { MapPin } from "@phosphor-icons/react";
 
 export default function NearbyOptIn() {
   const router = useRouter();

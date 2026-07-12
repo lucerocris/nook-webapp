@@ -16,3 +16,108 @@ body {
   color: var(--foreground);
   font-family: var(--font-poppins), ui-sans-serif, system-ui, sans-serif;
 }
+
+/* Three-dot "typing indicator" loader (see LoadingDots). Per-dot stagger is
+   set inline via animation-delay. */
+@keyframes nook-dot-bounce {
+  0%,
+  80%,
+  100% {
+    transform: translateY(0);
+    opacity: 0.35;
+  }
+  40% {
+    transform: translateY(-3px);
+    opacity: 1;
+  }
+}
+
+.nook-loading-dot {
+  animation: nook-dot-bounce 1.2s infinite ease-in-out both;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .nook-loading-dot {
+    animation: none;
+    opacity: 0.6;
+  }
+}
+
+/* Cafe map click-popup — let the card supply its own rounded corners and
+   shadow instead of maplibre's default padded/boxed popup chrome. */
+.cafe-popup .maplibregl-popup-content {
+  padding: 0;
+  border-radius: 1rem;
+  overflow: hidden;
+  background: transparent;
+  box-shadow:
+    0 12px 24px -8px rgba(15, 35, 20, 0.28),
+    0 4px 8px -4px rgba(15, 35, 20, 0.16);
+  /* Grow-and-fade entrance, anchored at the tip so it feels like it
+     springs out of the pin. */
+  transform-origin: var(--cafe-popup-origin, bottom center);
+  animation: cafe-popup-in 180ms cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+/* Anchor the transform origin toward the pin depending on which side
+   maplibre placed the popup, so the "pop" emanates from the tip. */
+.maplibregl-popup-anchor-top .maplibregl-popup-content,
+.maplibregl-popup-anchor-top-left .maplibregl-popup-content,
+.maplibregl-popup-anchor-top-right .maplibregl-popup-content {
+  --cafe-popup-origin: top center;
+}
+.maplibregl-popup-anchor-bottom .maplibregl-popup-content,
+.maplibregl-popup-anchor-bottom-left .maplibregl-popup-content,
+.maplibregl-popup-anchor-bottom-right .maplibregl-popup-content {
+  --cafe-popup-origin: bottom center;
+}
+.maplibregl-popup-anchor-left .maplibregl-popup-content {
+  --cafe-popup-origin: center left;
+}
+.maplibregl-popup-anchor-right .maplibregl-popup-content {
+  --cafe-popup-origin: center right;
+}
+
+@keyframes cafe-popup-in {
+  from {
+    opacity: 0;
+    transform: scale(0.9) translateY(4px);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .cafe-popup .maplibregl-popup-content {
+    animation: none;
+  }
+}
+
+.cafe-popup .maplibregl-popup-tip {
+  border-top-color: #ffffff;
+  border-bottom-color: #ffffff;
+}
+
+.cafe-popup .maplibregl-popup-close-button {
+  z-index: 10;
+  top: 6px;
+  right: 6px;
+  width: 24px;
+  height: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 9999px;
+  background: rgba(255, 255, 255, 0.92);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.18);
+  color: #3b3b3b;
+  font-size: 16px;
+  line-height: 1;
+  transition: background-color 150ms ease;
+}
+
+.cafe-popup .maplibregl-popup-close-button:hover {
+  background: #ffffff;
+}
