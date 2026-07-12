@@ -57,18 +57,5 @@ async function MapContent({ searchParams }: Props) {
   // re-fetches by viewport (radius when zoomed in, bounds when zoomed out).
   const cafes = await searchCafes({ query, tagNames, limit: 100 });
 
-  const heading = query
-    ? `Cafes matching "${query}"`
-    : tagNames
-      ? `Cafes tagged ${tagNames.map((t) => `"${t}"`).join(", ")}`
-      : "Explore cafes on the map";
-
-  return (
-    <MapExplorer
-      initialCafes={cafes}
-      query={query}
-      tags={tagNames}
-      heading={heading}
-    />
-  );
+  return <MapExplorer initialCafes={cafes} query={query} tags={tagNames} />;
 }

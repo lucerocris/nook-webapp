@@ -106,16 +106,15 @@ export default function HeroSearch({
 
   const submit = useCallback(
     (query: string) => {
-      // Search is proximity/location-based — tags never ride along here.
-      // (They still narrow the live dropdown preview above.)
       const trimmed = query.trim();
       setOpen(false);
       const params = new URLSearchParams();
       if (trimmed) params.set("q", trimmed);
+      if (selectedTags.length > 0) params.set("tags", selectedTags.join(","));
       const qs = params.toString();
       router.push(qs ? `/map?${qs}` : "/map");
     },
-    [router],
+    [router, selectedTags],
   );
 
   const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {

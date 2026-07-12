@@ -2,7 +2,6 @@ import { Suspense } from "react";
 import Image from "next/image";
 import { notFound } from "next/navigation";
 import {
-  CaretRight,
   Heart,
   MapPin,
   NavigationArrow,
@@ -12,10 +11,10 @@ import {
 
 import BusinessHoursDropdown from "@/app/components/BusinessHoursDropdown";
 import CafeDetailSkeleton from "@/app/components/CafeDetailSkeleton";
+import MenuHighlightsRow from "@/app/components/MenuHighlightsRow";
 import { getCafeById, getMenuItems } from "@/lib/data/cafes";
-import { formatPrice } from "@/lib/utils/format";
 import { getCurrentUserId } from "@/lib/data/auth";
-import type { MenuItem, Review, Tag } from "@/lib/data/cafes-mappers";
+import type { Review, Tag } from "@/lib/data/cafes-mappers";
 import { getTagIcon } from "@/lib/utils/tag-icon";
 import { parseOperatingHours } from "@/lib/utils/hours";
 
@@ -48,7 +47,6 @@ async function CafeDetailContent({ params }: Props) {
     (url): url is string => typeof url === "string" && url.length > 0,
   );
 
-  const menuHighlights = menu.slice(0, 4);
   const visibleReviews = cafe.reviews.slice(0, 4);
   const featuredTags = cafe.tags
     .filter((tag) => tag.isFeatured)
@@ -108,42 +106,15 @@ async function CafeDetailContent({ params }: Props) {
                 Menu Highlights
               </h2>
 
-              {menuHighlights.length > 0 ? (
-                <div className="relative mt-4 grid grid-cols-2 gap-3 md:grid-cols-4">
-                  {menuHighlights.map((item) => (
-                    <article key={item.id}>
-                      <MenuThumbnail item={item} />
-                      <h3 className="mt-2 text-sm font-semibold text-[#101514]">
-                        {item.name}
-                      </h3>
-                      <p className="mt-2 text-xs font-medium text-[#101514]">
-                        {formatPrice(item.price)}
-                      </p>
-                    </article>
-                  ))}
-
-                  <button
-                    type="button"
-                    aria-label="Next menu items"
-                    className="absolute right-[-16px] top-[42px] hidden h-9 w-9 items-center justify-center rounded-full border border-zinc-200 bg-white text-[#101514] shadow-sm md:flex"
-                  >
-                    <CaretRight size={18} />
-                  </button>
+              {menu.length > 0 ? (
+                <div className="mt-4">
+                  <MenuHighlightsRow items={menu} />
                 </div>
               ) : (
                 <p className="mt-4 text-sm text-zinc-500">
                   No menu items listed yet.
                 </p>
               )}
-
-              {menu.length > menuHighlights.length ? (
-                <button
-                  type="button"
-                  className="mt-6 rounded-full border border-zinc-200 bg-white px-5 py-2.5 text-sm font-medium text-[#101514] transition-colors hover:bg-zinc-50"
-                >
-                  See all menu
-                </button>
-              ) : null}
             </section>
 
             <section className="mt-8">
@@ -448,23 +419,3 @@ function ReviewCard({ review }: { review: Review }) {
   );
 }
 
-function MenuThumbnail({ item }: { item: MenuItem }) {
-  if (!item.imageUrl) {
-    return (
-      <div className="flex aspect-[1.55/1] items-center justify-center rounded-xl bg-zinc-100 text-xs text-zinc-400">
-        {item.name}
-      </div>
-    );
-  }
-  return (
-    <div className="relative aspect-[1.55/1] overflow-hidden rounded-xl bg-zinc-100">
-      <Image
-        src={item.imageUrl}
-        alt={item.name}
-        fill
-        sizes="(min-width: 768px) 20vw, 50vw"
-        className="object-cover"
-      />
-    </div>
-  );
-}

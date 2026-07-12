@@ -108,7 +108,8 @@ export default function CafeCard({ cafe, priority, variant = "default" }: Props)
 
   return (
     <Link href={`/cafes/${cafe.id}`} className="group block">
-      <article className="flex flex-col overflow-hidden rounded-2xl bg-white">
+      {/* No overflow-hidden — it was clipping the bottom tag pills. */}
+      <article className="flex flex-col rounded-2xl bg-white">
         <CardImage cafe={cafe} priority={priority} rounded="rounded-xl" />
 
         <div className="mt-3 flex items-center justify-between">

@@ -1,10 +1,12 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
+import { FunnelSimple } from "@phosphor-icons/react/dist/ssr";
 
 import CafeCard from "./CafeCard";
 import CafeMap from "./CafeMap";
 import LoadingDots from "./LoadingDots";
+import MapFilterModal, { type SortId } from "./MapFilterModal";
 import type { CafeSummary } from "@/lib/data/cafes-mappers";
 import {
   hasValidCoordinates,
@@ -16,7 +18,6 @@ type Props = {
   initialCafes: CafeSummary[];
   query?: string;
   tags?: string[];
-  heading?: string;
 };
 
 // When the whole visible area fits inside this radius we fetch a fixed circle
@@ -24,12 +25,7 @@ type Props = {
 const RADIUS_METERS = 20000; // 20 km
 const MOVE_DEBOUNCE_MS = 300;
 
-export default function MapExplorer({
-  initialCafes,
-  query,
-  tags,
-  heading,
-}: Props) {
+export default function MapExplorer({ initialCafes, query, tags }: Props) {
   const [cafes, setCafes] = useState<CafeSummary[]>(initialCafes);
   const [selectedCafeId, setSelectedCafeId] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
@@ -37,6 +33,10 @@ export default function MapExplorer({
     lat: number;
     lng: number;
   } | null>(null);
+
+  const [filterOpen, setFilterOpen] = useState(false);
+  const [activeSort, setActiveSort] = useState<SortId>("nearby");
+  const [activeTags, setActiveTags] = useState<string[]>(tags ?? []);
 
   // Plain "Search" (no text, no tags) means "cafes near me" — recenter the
   // map on the user's location once resolved; the pan/zoom-driven fetch
@@ -62,7 +62,7 @@ export default function MapExplorer({
 
   // Keep the latest filters in a ref so the (stable) viewport handler passed
   // to the map never captures stale values.
-  const tagsKey = tags?.join(",") ?? "";
+  const tagsKey = activeTags.join(",");
   const filtersRef = useRef({ query, tagsKey });
   useEffect(() => {
     filtersRef.current = { query, tagsKey };
@@ -70,6 +70,9 @@ export default function MapExplorer({
 
   const abortRef = useRef<AbortController | null>(null);
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  // The most recent viewport reported by the map, so applying filters can
+  // immediately re-fetch the area the user is currently looking at.
+  const lastViewportRef = useRef<MapViewport | null>(null);
 
   const fetchForViewport = useCallback((viewport: MapViewport) => {
     const params = new URLSearchParams();
@@ -113,6 +116,7 @@ export default function MapExplorer({
 
   const handleViewportChange = useCallback(
     (viewport: MapViewport) => {
+      lastViewportRef.current = viewport;
       if (debounceRef.current) clearTimeout(debounceRef.current);
       debounceRef.current = setTimeout(
         () => fetchForViewport(viewport),
@@ -121,6 +125,27 @@ export default function MapExplorer({
     },
     [fetchForViewport],
   );
+
+  const applyFilters = useCallback(
+    (sort: SortId, nextTags: string[]) => {
+      setActiveSort(sort);
+      setActiveTags(nextTags);
+      // Update the ref synchronously so the immediate re-fetch below picks up
+      // the new tags without waiting for the syncing effect to run.
+      filtersRef.current = { query, tagsKey: nextTags.join(",") };
+      setFilterOpen(false);
+      if (lastViewportRef.current) fetchForViewport(lastViewportRef.current);
+    },
+    [query, fetchForViewport],
+  );
+
+  const clearFilters = useCallback(() => {
+    setActiveSort("nearby");
+    setActiveTags([]);
+    filtersRef.current = { query, tagsKey: "" };
+    setFilterOpen(false);
+    if (lastViewportRef.current) fetchForViewport(lastViewportRef.current);
+  }, [query, fetchForViewport]);
 
   useEffect(() => {
     return () => {
@@ -131,16 +156,42 @@ export default function MapExplorer({
 
   const mappable = cafes.filter((c) => hasValidCoordinates(c.lat, c.lng));
 
+  const activeFilterCount = activeTags.length;
+
+  // Derive the heading from the live filter state so applying/clearing tags in
+  // the modal keeps it in sync. Same formats as the server-rendered heading.
+  const displayHeading = query
+    ? `Cafes matching "${query}"`
+    : activeTags.length > 0
+      ? `Cafes tagged ${activeTags.map((t) => `"${t}"`).join(", ")}`
+      : "Explore cafes on the map";
+
   return (
     <div className="flex h-full w-full flex-col lg:flex-row">
       <div className="flex w-full flex-col overflow-y-auto lg:h-full lg:w-1/2">
-        <div className="shrink-0 px-6 pb-3 pt-8 sm:px-8">
-          <h1 className="text-lg font-semibold text-[#101514]">
-            {heading ?? "Explore cafes on the map"}
-          </h1>
-          <p className="mt-1 text-sm text-zinc-500">
-            {mappable.length} {mappable.length === 1 ? "cafe" : "cafes"} in view
-          </p>
+        <div className="flex shrink-0 items-start justify-between gap-3 px-6 pb-3 pt-8 sm:px-8">
+          <div>
+            <h1 className="text-lg font-semibold text-[#101514]">
+              {displayHeading}
+            </h1>
+            <p className="mt-1 text-sm text-zinc-500">
+              {mappable.length} {mappable.length === 1 ? "cafe" : "cafes"} in
+              view
+            </p>
+          </div>
+          <button
+            type="button"
+            onClick={() => setFilterOpen(true)}
+            className="flex shrink-0 items-center gap-2 rounded-full border border-zinc-300 bg-white px-4 py-2 text-sm font-medium text-[#3b3b3b] transition-colors hover:bg-zinc-50"
+          >
+            <FunnelSimple size={18} weight="bold" />
+            Filters
+            {activeFilterCount > 0 ? (
+              <span className="flex h-5 min-w-5 items-center justify-center rounded-full bg-[#3A5A40] px-1.5 text-xs font-semibold text-white">
+                {activeFilterCount}
+              </span>
+            ) : null}
+          </button>
         </div>
 
         {mappable.length === 0 ? (
@@ -185,6 +236,16 @@ export default function MapExplorer({
           />
         </div>
       </div>
+
+      {filterOpen ? (
+        <MapFilterModal
+          onClose={() => setFilterOpen(false)}
+          initialSort={activeSort}
+          initialTags={activeTags}
+          onApply={applyFilters}
+          onClearAll={clearFilters}
+        />
+      ) : null}
     </div>
   );
 }

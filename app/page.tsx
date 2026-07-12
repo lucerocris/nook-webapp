@@ -2,6 +2,7 @@ import { Suspense } from "react";
 
 import CafeRow from "./components/CafeRow";
 import CafeRowSkeleton from "./components/CafeRowSkeleton";
+import Footer from "./components/Footer";
 import Hero from "./components/Hero";
 import NearbyOptIn from "./components/NearbyOptIn";
 import { getHomeFeed } from "@/lib/data/cafes";
@@ -19,15 +20,18 @@ function parseCoord(value: string | undefined): number | undefined {
 
 export default function Home({ searchParams }: Props) {
   return (
-    <main className="flex-1">
-      <Hero />
-      <Suspense fallback={null}>
-        <NearbyOptIn />
-      </Suspense>
-      <Suspense fallback={<CafeRowSkeleton title="Featured" />}>
-        <HomeFeed searchParams={searchParams} />
-      </Suspense>
-    </main>
+    <>
+      <main className="flex-1">
+        <Hero />
+        <Suspense fallback={null}>
+          <NearbyOptIn />
+        </Suspense>
+        <Suspense fallback={<CafeRowSkeleton title="Featured" />}>
+          <HomeFeed searchParams={searchParams} />
+        </Suspense>
+      </main>
+      <Footer />
+    </>
   );
 }
 

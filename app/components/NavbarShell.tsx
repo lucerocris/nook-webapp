@@ -48,7 +48,14 @@ export default function NavbarShell({
           : "bg-transparent border-b border-transparent",
       ].join(" ")}
     >
-      <nav className="mx-auto flex h-20 max-w-7xl items-center gap-6 px-6 sm:px-8">
+      <nav
+        className={[
+          "mx-auto flex h-20 items-center gap-6 px-6 sm:px-8",
+          // On the map page the content is full-width, so the navbar spans the
+          // full width too; elsewhere it stays capped and centered.
+          isMapPage ? "max-w-none" : "max-w-7xl",
+        ].join(" ")}
+      >
         <Link
           href="/"
           aria-label="Nook home"

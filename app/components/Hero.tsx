@@ -5,7 +5,13 @@ import { getSearchTags, searchCafes } from "@/lib/data/search";
 
 function HeroShell({ children }: { children: React.ReactNode }) {
   return (
-    <section className="pt-48 pb-16 sm:pt-64 sm:pb-24">
+    <section className="relative overflow-hidden pt-48 pb-16 sm:pt-64 sm:pb-24">
+      {/* Decorative only — green glow behind the hero (page-wide dots come from
+          the body background). */}
+      <div aria-hidden className="pointer-events-none absolute inset-0">
+        <div className="hero-glow absolute inset-x-0 top-0 h-[640px]" />
+      </div>
+
       <div className="mx-auto w-full max-w-5xl px-6 sm:px-8">
         <div className="relative z-10 flex flex-col items-center text-center">
           <h1 className="text-4xl font-semibold tracking-tight text-[#3b3b3b] sm:text-5xl">
