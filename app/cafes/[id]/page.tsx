@@ -12,10 +12,12 @@ import {
 
 import BusinessHoursDropdown from "@/app/components/BusinessHoursDropdown";
 import CafeDetailSkeleton from "@/app/components/CafeDetailSkeleton";
+import CafeLocationMap from "@/app/components/CafeLocationMap";
+import CafeTagsOverview from "@/app/components/CafeTagsOverview";
 import MenuHighlightsRow from "@/app/components/MenuHighlightsRow";
 import { getCafeById, getMenuItems } from "@/lib/data/cafes";
 import { getCurrentUserId } from "@/lib/data/auth";
-import type { Review, Tag } from "@/lib/data/cafes-mappers";
+import type { Review } from "@/lib/data/cafes-mappers";
 import { getTagIcon } from "@/lib/utils/tag-icon";
 import { parseOperatingHours } from "@/lib/utils/hours";
 
@@ -130,42 +132,30 @@ async function CafeDetailContent({ params }: Props) {
                 </p>
               )}
 
-              <div className="mt-5 grid gap-7 text-sm text-[#101514] sm:grid-cols-3">
-                <AmenityList
-                  title="Amenities"
-                  items={cafe.tags.filter(
-                    (tag) => tag.category === "amenities",
-                  )}
-                />
-                <AmenityList
-                  title="Best For"
-                  items={cafe.tags.filter((tag) => tag.category === "best_for")}
-                />
-                <AmenityList
-                  title="Payment"
-                  items={cafe.tags.filter((tag) => tag.category === "payment")}
-                />
-              </div>
+              <CafeTagsOverview
+                amenities={cafe.tags.filter(
+                  (tag) => tag.category === "amenities",
+                )}
+                bestFor={cafe.tags.filter(
+                  (tag) => tag.category === "best_for",
+                )}
+                payment={cafe.tags.filter(
+                  (tag) => tag.category === "payment",
+                )}
+              />
             </section>
 
             <section className="mt-10">
               <h2 className="text-lg font-semibold text-[#2f2f2f]">Location</h2>
               <div className="mt-4 flex flex-col gap-4 sm:flex-row sm:items-center">
-                <a
-                  href={mapsUrl}
-                  target="_blank"
-                  rel="noreferrer"
-                  aria-label={`Open ${cafe.name} in Google Maps`}
-                  className="relative block h-48 w-full overflow-hidden rounded-xl bg-zinc-100 sm:w-80"
-                >
-                  <Image
-                    src="https://images.unsplash.com/photo-1524661135-423995f22d0b?auto=format&fit=crop&w=900&q=80"
-                    alt={`${cafe.name} map preview`}
-                    fill
-                    sizes="(min-width: 640px) 320px, 100vw"
-                    className="object-cover transition-transform duration-300 hover:scale-105"
+                <div className="h-48 w-full overflow-hidden rounded-xl bg-zinc-100 sm:w-80">
+                  <CafeLocationMap
+                    name={cafe.name}
+                    address={fullAddress || cafe.address}
+                    lat={cafe.lat}
+                    lng={cafe.lng}
                   />
-                </a>
+                </div>
                 <a
                   href={mapsUrl}
                   target="_blank"
@@ -372,29 +362,6 @@ function RatingStars({ rating = 5, size = 13 }: { rating?: number; size?: number
   );
 }
 
-function AmenityList({ title, items }: { title: string; items: Tag[] }) {
-  return (
-    <div>
-      <h3 className="text-sm font-normal text-[#8b8b8b]">{title}</h3>
-      <div className="mt-4 space-y-4">
-        {items.length > 0 ? (
-          items.map((tag) => {
-            const Icon = getTagIcon(tag.name);
-            return (
-              <div key={tag.id} className="flex items-center gap-3">
-                <Icon size={17} className="text-[#101514]" />
-                <span>{tag.name}</span>
-              </div>
-            );
-          })
-        ) : (
-          <p className="text-sm text-zinc-400">—</p>
-        )}
-      </div>
-    </div>
-  );
-}
-
 function ReviewCard({ review }: { review: Review }) {
   return (
     <article className="rounded-xl border border-zinc-200 p-4">
@@ -421,4 +388,3 @@ function ReviewCard({ review }: { review: Review }) {
     </article>
   );
 }
-
