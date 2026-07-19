@@ -1,4 +1,5 @@
 import "server-only";
+import { SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY } from "@/lib/env";
 
 import { cache } from "react";
 import { cacheLife } from "next/cache";
@@ -18,8 +19,8 @@ type AnonClient = ReturnType<typeof createSupabaseClient<Database>>;
 
 function createAnonClient(): AnonClient {
   return createSupabaseClient<Database>(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY!,
+    SUPABASE_URL,
+    SUPABASE_PUBLISHABLE_KEY,
     {
       auth: { persistSession: false, autoRefreshToken: false },
     },
@@ -27,6 +28,18 @@ function createAnonClient(): AnonClient {
 }
 
 const DEFAULT_LIMIT = 12;
+
+/** Postgres rejects a malformed uuid with SQLSTATE 22P02 rather than returning
+ * no rows, so `/cafes/not-a-uuid` used to throw out of the cached scope and
+ * render the error boundary instead of a 404 — and it threw from
+ * generateMetadata too, which runs outside Suspense and takes the whole route
+ * down. Screen ids here so a bad URL is simply "not found". */
+const UUID_RE =
+  /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+
+export function isCafeId(id: string): boolean {
+  return UUID_RE.test(id);
+}
 
 const CAFE_DETAIL_SELECT = `
   id, created_at, name, description, address, neighborhood, city,
@@ -149,6 +162,8 @@ export const getCafeById = cache(
     "use cache";
     cacheLife("hours");
 
+    if (!isCafeId(id)) return null;
+
     const supabase = createAnonClient();
     const select = includeReviews
       ? CAFE_DETAIL_WITH_REVIEWS_SELECT
@@ -209,6 +224,8 @@ export const getMenuItems = cache(
   async (cafeId: string): Promise<MenuItem[]> => {
     "use cache";
     cacheLife("hours");
+
+    if (!isCafeId(cafeId)) return [];
 
     const supabase = createAnonClient();
     const { data, error } = await supabase.rpc("get_menu_items", {
