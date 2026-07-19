@@ -165,9 +165,21 @@ async function CafeDetailContent({ params }: Props) {
         <div className="mt-8 grid gap-9 lg:grid-cols-[minmax(0,1fr)_410px]">
           <div className="min-w-0">
             <section>
-              <h2 className="text-lg font-semibold text-[#101514]">
-                Menu Highlights
-              </h2>
+              <div className="flex items-center justify-between gap-4">
+                <h2 className="text-lg font-semibold text-[#101514]">
+                  Menu Highlights
+                </h2>
+                {menu.length > 0 ? (
+                  <Link href={`/cafes/${id}/menu`}>
+                    <button
+                      type="button"
+                      className="shrink-0 rounded-full border border-zinc-200 px-4 py-2 text-xs font-medium text-[#3b3b3b] transition-colors hover:bg-zinc-50"
+                    >
+                      See full menu
+                    </button>
+                  </Link>
+                ) : null}
+              </div>
 
               {menu.length > 0 ? (
                 <div className="mt-4">

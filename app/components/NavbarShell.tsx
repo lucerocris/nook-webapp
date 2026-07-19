@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { CaretLeft } from "@phosphor-icons/react";
 import { signOut } from "@/app/(auth)/actions";
 import HeroSearch from "./HeroSearch";
 import type { SearchTags } from "@/lib/data/search";
@@ -17,6 +18,9 @@ export default function NavbarShell({
 }) {
   const pathname = usePathname();
   const isMapPage = pathname === "/map";
+  // The menu page is a drill-down off a cafe, so the navbar carries the way
+  // back to it instead of the page rendering its own control.
+  const menuBackHref = pathname.match(/^\/cafes\/([^/]+)\/menu$/)?.[1];
   const [scrolled, setScrolled] = useState(false);
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
@@ -38,6 +42,24 @@ export default function NavbarShell({
     document.addEventListener("mousedown", onMouseDown);
     return () => document.removeEventListener("mousedown", onMouseDown);
   }, [isMenuOpen]);
+
+  // The menu page is a focused drill-down: the only chrome is the way back to
+  // the cafe it belongs to. No logo, no account menu.
+  if (menuBackHref) {
+    return (
+      <header className="fixed inset-x-0 top-0 z-50 bg-transparent">
+        <nav className="mx-auto flex h-20 max-w-7xl items-center px-6 sm:px-8">
+          <Link
+            href={`/cafes/${menuBackHref}`}
+            aria-label="Back to cafe"
+            className="flex size-10 shrink-0 items-center justify-center rounded-full border border-zinc-300 text-zinc-800 transition-colors hover:bg-zinc-50"
+          >
+            <CaretLeft size={18} />
+          </Link>
+        </nav>
+      </header>
+    );
+  }
 
   return (
     <header
