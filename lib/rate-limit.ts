@@ -64,10 +64,16 @@ export function rateLimit(
 
 /** Best available client identifier behind Vercel's proxy. */
 export function clientKey(request: Request, prefix: string): string {
-  const forwarded = request.headers.get("x-forwarded-for");
+  return headerKey(request.headers, prefix);
+}
+
+/** Same, for callers that hold Headers rather than a Request — Server Actions
+ * get theirs from `headers()` in next/headers and never see a Request. */
+export function headerKey(headers: Headers, prefix: string): string {
+  const forwarded = headers.get("x-forwarded-for");
   const ip =
     forwarded?.split(",")[0]?.trim() ||
-    request.headers.get("x-real-ip") ||
+    headers.get("x-real-ip") ||
     "unknown";
   return `${prefix}:${ip}`;
 }
