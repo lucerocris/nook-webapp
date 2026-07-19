@@ -22,7 +22,11 @@ export async function GET(request: Request) {
         .map((t) => t.trim())
         .filter(Boolean)
     : undefined;
-  const filters: MapFetchFilters = { query, tagNames };
+  const sortParam = searchParams.get("sort");
+  const sort = (["nearby", "top_rated", "trending", "newest"] as const).find(
+    (s) => s === sortParam,
+  );
+  const filters: MapFetchFilters = { query, tagNames, sort };
 
   const mode = searchParams.get("mode");
 

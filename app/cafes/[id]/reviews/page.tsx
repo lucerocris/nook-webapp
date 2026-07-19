@@ -1,6 +1,6 @@
 import { Suspense } from "react";
 import CafeDetailSkeleton from "@/app/components/CafeDetailSkeleton";
-import { getCafeById } from "@/lib/data/cafes";
+import { getCafeById, MAX_REVIEW_LIMIT } from "@/lib/data/cafes";
 import { notFound } from "next/navigation";
 import type { CafeDetails, MenuItem, Review, Tag } from "@/lib/data/cafes-mappers";
 import {
@@ -36,14 +36,14 @@ export default async function CafeReviewsPage({params}: Props){
 
 async function CafeReviewRender({ params }: Props){
     const {id} = await params;
-    //console.log("ID: " + id)
-    const cafe = await getCafeById(id)
+    // This page lists reviews, so it needs more than the detail page's default
+    // of 4 — but still bounded, not the whole table.
+    const cafe = await getCafeById(id, { reviewLimit: MAX_REVIEW_LIMIT })
 
     if (!cafe) {
         notFound();
     }
 
-    console.log(cafe.reviews)
 
     return(
         <main className="grid grid-cols-5 mt-25 mb-16 mx-57">
@@ -54,15 +54,22 @@ async function CafeReviewRender({ params }: Props){
                     </h2>
                 </div>
                 <div className="flex items-center mt-3 mb-3 justify-between gap-4">
-                    <h2 className="text-lg font-semibold text-black/17">
+                    <h2 className="text-lg font-semibold text-zinc-500">
                        {cafe.reviewCount} reviews
                     </h2>
                 </div>
                 <hr className="my-5 border-black/15"/>
                 <div className="mt-4 grid gap-4 sm:grid-cols-1">
-                    {cafe.reviews.map((review) => (
-                        <ReviewCard key={review.id} review={review} />
-                    ))}
+                    {cafe.reviews.length > 0 ? (
+                        cafe.reviews.map((review) => (
+                            <ReviewCard key={review.id} review={review} />
+                        ))
+                    ) : (
+                        <p className="text-sm text-zinc-500">
+                            No reviews yet — be the first to share what this cafe
+                            is like.
+                        </p>
+                    )}
                 </div>
             </section>
 
@@ -80,7 +87,7 @@ async function CafeReviewRender({ params }: Props){
                     </span>
                 </div>
                 <div className="flex items-center justify-between gap-4">
-                    <span className="text-lg font-semibold text-black/17">{cafe.reviewCount} reviews</span>
+                    <span className="text-lg font-semibold text-zinc-500">{cafe.reviewCount} reviews</span>
                 </div>
                 <CalcRatings cafe={cafe}/>
                 <hr className="mt-5 border-black/15"/>
@@ -132,14 +139,17 @@ function ReviewCard({ review }: { review: Review }) {
 
 
 function CalcRatings({cafe}: {cafe: CafeDetails}){
-    let reviews = cafe.reviews  || [];
-    let ratings = [0, 0, 0, 0, 0];// ratings 1, 2, 3, 4, 5
-    let totalCount = cafe.reviewCount || 1;
+    const reviews = cafe.reviews  || [];
+    const ratings = [0, 0, 0, 0, 0];// ratings 1, 2, 3, 4, 5
     reviews.forEach(rev => {
         if(rev.rating >= 1 && rev.rating <= 5){
             ratings[rev.rating - 1]++;
         }
     });
+    // Divide by the reviews actually counted, not cafe.reviewCount — that DB
+    // aggregate includes moderated-away rows and any beyond the fetch limit, so
+    // using it made the bars systematically under-fill and never total 100%.
+    const totalCount = reviews.length || 1;
 
     return(
         <div className="flex flex-col gap-y-4 pt-5 mb-10">

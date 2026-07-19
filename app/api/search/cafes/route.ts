@@ -12,13 +12,28 @@ export async function GET(request: Request) {
         .map((t) => t.trim())
         .filter(Boolean)
     : undefined;
-  const limitParam = searchParams.get("limit");
-  const limit = limitParam ? Math.min(50, Math.max(1, Number(limitParam))) : 25;
+  // Number("abc") is NaN, and Math.min/max propagate it — an unparseable limit
+  // used to silently produce a NaN limit and an empty result set.
+  const parsedLimit = Number(searchParams.get("limit"));
+  const limit = Number.isFinite(parsedLimit)
+    ? Math.min(50, Math.max(1, Math.trunc(parsedLimit)))
+    : 25;
 
-  const cafes = await searchCafes({
-    query,
-    tagNames: tagNames && tagNames.length > 0 ? tagNames : undefined,
-    limit,
-  });
-  return NextResponse.json({ cafes });
+  try {
+    const cafes = await searchCafes({
+      query,
+      tagNames: tagNames && tagNames.length > 0 ? tagNames : undefined,
+      limit,
+    });
+    return NextResponse.json({ cafes });
+  } catch (error) {
+    // Without this the thrown Supabase error became an unhandled 500, which the
+    // client rendered as "no cafes match your search" — telling users the
+    // product is empty during an outage.
+    console.error("[search/cafes] query failed", error);
+    return NextResponse.json(
+      { error: "Search is unavailable right now." },
+      { status: 503 },
+    );
+  }
 }

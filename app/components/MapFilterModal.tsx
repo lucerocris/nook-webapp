@@ -263,7 +263,7 @@ function TagWrap({
               "inline-flex h-8 items-center gap-1.5 rounded-full border px-3 text-sm font-medium transition-colors",
               isSelected
                 ? "border-[#3A5A40] bg-[#3A5A40] text-white"
-                : "border-[#868584] text-[#868584] hover:bg-zinc-50",
+                : "border-[#6b6b6b] text-[#6b6b6b] hover:bg-zinc-50",
             ].join(" ")}
           >
             <TagIcon size={14} weight={isSelected ? "fill" : "regular"} />
