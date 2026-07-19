@@ -87,11 +87,42 @@ export function formatTimeRange(hours: DayHours | null | undefined): string {
   return `${open} - ${close}`;
 }
 
+/** Cafe opening hours are stored as local Philippine wall-clock times, so both
+ * the day-of-week and the current time must be resolved in Asia/Manila. Using
+ * the ambient runtime zone meant a viewer in London saw "Closed" (or the wrong
+ * day's hours entirely) for a cafe that was open — and because this renders in
+ * a client component inside cached HTML, it could also disagree with the
+ * server-rendered markup at hydration. */
+export const CAFE_TIME_ZONE = "Asia/Manila";
+
+const zonedFormatter = new Intl.DateTimeFormat("en-US", {
+  timeZone: CAFE_TIME_ZONE,
+  weekday: "long",
+  hour: "2-digit",
+  minute: "2-digit",
+  hour12: false,
+});
+
+type ZonedNow = { dayKey: DayKey; minutes: number };
+
+function zonedNow(now: Date): ZonedNow {
+  const parts = zonedFormatter.formatToParts(now);
+  const get = (type: Intl.DateTimeFormatPartTypes) =>
+    parts.find((part) => part.type === type)?.value ?? "";
+
+  const label = get("weekday").toLowerCase();
+  // `hour12: false` can yield "24" for midnight in some engines; normalise it.
+  const hour = Number(get("hour")) % 24;
+  const minute = Number(get("minute"));
+
+  return {
+    dayKey: isDayKey(label) ? label : "sunday",
+    minutes: (Number.isNaN(hour) ? 0 : hour) * 60 + (Number.isNaN(minute) ? 0 : minute),
+  };
+}
+
 export function getCurrentDayKey(now: Date = new Date()): DayKey {
-  const label = now
-    .toLocaleDateString("en-US", { weekday: "long" })
-    .toLowerCase();
-  return isDayKey(label) ? label : "sunday";
+  return zonedNow(now).dayKey;
 }
 
 function toMinutes(hhmm: string): number {
@@ -103,10 +134,9 @@ export function isOpenNow(
   hours: OperatingHours,
   now: Date = new Date(),
 ): boolean {
-  const key = getCurrentDayKey(now);
-  const today = hours[key];
+  const { dayKey, minutes: current } = zonedNow(now);
+  const today = hours[dayKey];
   if (!today || today.closed) return false;
-  const current = now.getHours() * 60 + now.getMinutes();
   const open = toMinutes(today.open);
   const close = toMinutes(today.close);
   if (open === close) return false;
