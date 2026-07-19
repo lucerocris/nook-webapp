@@ -77,13 +77,13 @@ export default function BusinessHoursDropdown({ hours }: Props) {
           <span className={`block text-sm font-semibold leading-none ${statusClass}`}>
             {statusText}
           </span>
-          <span className="mt-2 block text-xs leading-none text-[#858585]">
+          <span className="mt-2 block text-xs leading-none text-[#6b6b6b]">
             {subtitle}
           </span>
         </span>
         <CaretDown
           size={20}
-          className={`shrink-0 text-[#858585] transition-transform duration-200 ${
+          className={`shrink-0 text-[#6b6b6b] transition-transform duration-200 ${
             open ? "rotate-180" : "rotate-0"
           }`}
         />
@@ -112,7 +112,7 @@ export default function BusinessHoursDropdown({ hours }: Props) {
                   row.isClosed
                     ? row.isToday
                       ? "text-[#b94a48]"
-                      : "text-[#858585]"
+                      : "text-[#6b6b6b]"
                     : row.isToday
                       ? "text-[#b94a48]"
                       : "text-[#101514]"
