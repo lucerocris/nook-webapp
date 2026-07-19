@@ -1,183 +1,194 @@
-import React from "react";
-import {View, Text, StyleSheet, SafeAreaView, ScrollView, Image,} from "react-native";
+import { Suspense } from "react";
+import Image from "next/image";
+import { notFound } from "next/navigation";
+import type { Metadata } from "next";
 
-const featured = [
-  {
-    id: 1,
-    name: "Iced Spanish Latte",
-    price: "₱150.00",
-    image:
-      "https://images.unsplash.com/photo-1495474472287-4d71bcdd2085?w=600",
+import CafeDetailSkeleton from "@/app/components/CafeDetailSkeleton";
+import { getCafeById, getMenuItems } from "@/lib/data/cafes";
+import { formatPrice } from "@/lib/utils/format";
+import { SITE_URL as siteUrl } from "@/lib/env";
+import type { MenuItem, MenuItemVariant } from "@/lib/data/cafes-mappers";
+
+type Props = {
+  params: Promise<{ id: string }>;
+};
+
+const UNCATEGORIZED = "More";
+
+export async function generateMetadata({ params }: Props): Promise<Metadata> {
+  const { id } = await params;
+  const cafe = await getCafeById(id);
+
+  if (!cafe) {
+    return { title: "Menu", robots: { index: false } };
   }
-];
 
-const menu = [
-  {
-    title: "Signature Brews",
-    items: [
-      {
-        name: "Hiraya House Blend",
-        desc: "Rich coffee with hints of chocolate and citrus.",
-        price: "₱150.00",
-      },
-      {
-        name: "Dirty Horchata",
-        desc: "Sweet horchata with espresso.",
-        price: "₱175.00",
-      },
-      {
-        name: "Sea Salt Cream Latte",
-        desc: "Smooth latte topped with sea salt cream.",
-        price: "₱180.00",
-      },
-    ],
-  },
-  {
-    title: "Signature Brews",
-    items: [
-      {
-        name: "Hiraya House Blend",
-        desc: "Rich coffee with hints of chocolate and citrus.",
-        price: "₱150.00",
-      },
-      {
-        name: "Dirty Horchata",
-        desc: "Sweet horchata with espresso.",
-        price: "₱175.00",
-      },
-      {
-        name: "Sea Salt Cream Latte",
-        desc: "Smooth latte topped with sea salt cream.",
-        price: "₱180.00",
-      },
-    ],
-  },
-];
+  return {
+    title: `${cafe.name} menu`,
+    description: `Drinks, food and prices at ${cafe.name}.`,
+    alternates: { canonical: `${siteUrl}/cafes/${id}/menu` },
+  };
+}
 
-export default function MenuScreen() {
+export default async function CafeMenuPage({ params }: Props) {
   return (
-    <SafeAreaView style={styles.container}>
-      <ScrollView showsVerticalScrollIndicator={false}>
-        <Text style={styles.header}>Menu</Text>
-
-        {/* Featured Drinks */}
-        <ScrollView
-          showsHorizontalScrollIndicator={false}
-          contentContainerStyle={styles.horizontal}
-        >
-          {featured.map((item) => (
-            <View key={item.id} style={styles.card}>
-              <Image
-                source={{ uri: item.image }}
-                style={styles.cardImage}
-              />
-
-              <Text style={styles.cardTitle}>{item.name}</Text>
-              <Text style={styles.cardPrice}>{item.price}</Text>
-            </View>
-          ))}
-        </ScrollView>
-
-        {/* Menu Sections */}
-        {menu.map((section, index) => (
-          <View key={index} style={styles.section}>
-            <Text style={styles.sectionTitle}>{section.title}</Text>
-
-            {section.items.map((item, idx) => (
-              <View key={idx} style={styles.menuItem}>
-                <View style={{ flex: 1 }}>
-                  <Text style={styles.itemTitle}>{item.name}</Text>
-                  <Text style={styles.itemDesc}>{item.desc}</Text>
-                </View>
-
-                <Text style={styles.price}>{item.price}</Text>
-              </View>
-            ))}
-          </View>
-        ))}
-      </ScrollView>
-    </SafeAreaView>
+    <Suspense fallback={<CafeDetailSkeleton />}>
+      <CafeMenuRender params={params} />
+    </Suspense>
   );
 }
 
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: "#fff",
-  },
+async function CafeMenuRender({ params }: Props) {
+  const { id } = await params;
+  const [cafe, items] = await Promise.all([getCafeById(id), getMenuItems(id)]);
 
-  header: {
-    fontSize: 28,
-    fontWeight: "700",
-    marginHorizontal: 20,
-    marginTop: 15,
-    marginBottom: 18,
-  },
+  if (!cafe) {
+    notFound();
+  }
 
-  horizontal: {
-    paddingHorizontal: 20,
-    paddingBottom: 10,
-  },
+  const highlights = items.filter((item) => item.isHighlight);
+  const sections = groupByCategory(items);
 
-  card: {
-    width: 150,
-    marginRight: 14,
-  },
+  return (
+    <main className="mx-auto mt-20 mb-16 w-full max-w-5xl px-6">
+      <h1 className="text-4xl font-semibold text-[#2f2f2f]">Menu</h1>
 
-  cardImage: {
-    width: "100%",
-    height: 90,
-    borderRadius: 14,
-  },
+      {items.length === 0 ? (
+        <p className="mt-6 text-sm text-zinc-500">No menu items listed yet.</p>
+      ) : null}
 
-  cardTitle: {
-    marginTop: 8,
-    fontWeight: "600",
-    fontSize: 13,
-  },
+      {highlights.length > 0 ? (
+        <ul className="mt-8 grid grid-cols-2 gap-x-6 gap-y-8 sm:grid-cols-3 lg:grid-cols-5">
+          {highlights.map((item) => (
+            <li key={item.id}>
+              <HighlightThumbnail item={item} />
+              <h2 className="mt-3 text-base font-semibold text-[#101514]">
+                {item.name}
+              </h2>
+              <p className="mt-1 text-sm text-[#6b6b6b]">
+                {formatPrice(displayPrice(item))}
+              </p>
+            </li>
+          ))}
+        </ul>
+      ) : null}
 
-  cardPrice: {
-    marginTop: 3,
-    color: "#777",
-    fontSize: 12,
-  },
+      {sections.map((section, index) => (
+        <section key={section.key} className={index === 0 ? "mt-12" : "mt-10"}>
+          <h2 className="text-lg font-semibold text-[#101514]">
+            {section.title}
+          </h2>
 
-  section: {
-    marginTop: 24,
-    paddingHorizontal: 20,
-  },
+          <ul className="mt-3">
+            {section.items.map((item) => (
+              <li
+                key={item.id}
+                className="flex items-start justify-between gap-6 border-b border-black/8 py-4 last:border-b-0"
+              >
+                <div className="min-w-0">
+                  <h3 className="text-sm font-semibold text-[#101514]">
+                    {item.name}
+                  </h3>
+                  {item.description ? (
+                    <p className="mt-1 text-xs leading-5 text-[#6b6b6b]">
+                      {item.description}
+                    </p>
+                  ) : null}
+                  {item.variants.length > 0 ? (
+                    <p className="mt-2 text-xs text-[#6b6b6b]">
+                      {sortedVariants(item)
+                        .map(
+                          (variant) =>
+                            `${variant.label} ${formatPrice(
+                              variantPrice(item, variant),
+                            )}`,
+                        )
+                        .join(" · ")}
+                    </p>
+                  ) : null}
+                </div>
 
-  sectionTitle: {
-    fontWeight: "700",
-    fontSize: 16,
-    marginBottom: 12,
-  },
+                <p className="shrink-0 text-sm font-semibold text-[#101514]">
+                  {formatPrice(displayPrice(item))}
+                </p>
+              </li>
+            ))}
+          </ul>
+        </section>
+      ))}
+    </main>
+  );
+}
 
-  menuItem: {
-    flexDirection: "row",
-    paddingVertical: 14,
-    borderBottomWidth: 1,
-    borderBottomColor: "#F0F0F0",
-    alignItems: "flex-start",
-  },
+function HighlightThumbnail({ item }: { item: MenuItem }) {
+  if (!item.imageUrl) {
+    return (
+      <div className="flex aspect-[1.55/1] items-center justify-center rounded-xl bg-zinc-100 px-2 text-center text-xs text-zinc-400">
+        {item.name}
+      </div>
+    );
+  }
+  return (
+    <div className="relative aspect-[1.55/1] overflow-hidden rounded-xl bg-zinc-100">
+      <Image
+        src={item.imageUrl}
+        alt={item.name}
+        fill
+        sizes="(min-width: 1024px) 20vw, (min-width: 640px) 33vw, 50vw"
+        className="object-cover"
+      />
+    </div>
+  );
+}
 
-  itemTitle: {
-    fontWeight: "600",
-    fontSize: 14,
-    marginBottom: 4,
-  },
+function variantPrice(item: MenuItem, variant: MenuItemVariant) {
+  return variant.priceOverride ?? item.price + variant.priceModifier;
+}
 
-  itemDesc: {
-    fontSize: 12,
-    color: "#888",
-    lineHeight: 18,
-    paddingRight: 20,
-  },
+/** The price to headline for an item. `menu_items.price` is the base, but a
+ * variant flagged is_default can carry a price_override — without this an item
+ * whose default Small overrides to 120 headlines its base of 0 as "P0.00"
+ * right next to "Small P120.00". */
+function displayPrice(item: MenuItem) {
+  const preferred =
+    item.variants.find((variant) => variant.isDefault) ?? null;
+  return preferred ? variantPrice(item, preferred) : item.price;
+}
 
-  price: {
-    fontWeight: "600",
-    fontSize: 14,
-    color: "#222",
-    marginLeft: 15,
-  },
-});
+/** menu_item_variants has a sort_order that the mapper reads and nothing used,
+ * and the RPC aggregates variants without a stable tiebreak — so sizes could
+ * render "Large · Small · Medium" on one request and differently on the next,
+ * then freeze that way for the life of the cache entry. */
+function sortedVariants(item: MenuItem): MenuItemVariant[] {
+  return [...item.variants].sort(
+    (a, b) => a.sortOrder - b.sortOrder || a.label.localeCompare(b.label),
+  );
+}
+
+// get_menu_items has no ORDER BY, so row order is whatever Postgres happens to
+// return and can differ between calls. Sort here to keep sections and items
+// stable — categories alphabetically, uncategorised last.
+function groupByCategory(items: MenuItem[]) {
+  type Section = { key: string; title: string; items: MenuItem[] };
+  const sections = new Map<string, Section>();
+
+  for (const item of items) {
+    const key = item.categoryId ?? UNCATEGORIZED;
+    let section = sections.get(key);
+    if (!section) {
+      section = { key, title: item.categoryName ?? UNCATEGORIZED, items: [] };
+      sections.set(key, section);
+    }
+    section.items.push(item);
+  }
+
+  for (const section of sections.values()) {
+    section.items.sort((a, b) => a.name.localeCompare(b.name));
+  }
+
+  return [...sections.values()].sort((a, b) => {
+    if (a.key === UNCATEGORIZED) return 1;
+    if (b.key === UNCATEGORIZED) return -1;
+    return a.title.localeCompare(b.title);
+  });
+}

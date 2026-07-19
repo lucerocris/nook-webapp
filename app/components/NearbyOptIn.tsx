@@ -23,8 +23,8 @@ export default function NearbyOptIn() {
     navigator.geolocation.getCurrentPosition(
       (position) => {
         const params = new URLSearchParams(searchParams.toString());
-        params.set("lat", position.coords.latitude.toFixed(6));
-        params.set("lng", position.coords.longitude.toFixed(6));
+        params.set("lat", position.coords.latitude.toFixed(3));
+        params.set("lng", position.coords.longitude.toFixed(3));
         startTransition(() => {
           router.push(`/?${params.toString()}`);
         });

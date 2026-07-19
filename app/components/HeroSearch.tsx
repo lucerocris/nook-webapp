@@ -12,6 +12,7 @@ import {
 } from "react";
 import { X } from "@phosphor-icons/react";
 
+import AskAIPanel from "./AskAIPanel";
 import SearchDropdown, { type SearchTab } from "./SearchDropdown";
 import type { CafeSummary } from "@/lib/data/cafes-mappers";
 import type { SearchTags } from "@/lib/data/search";
@@ -35,6 +36,11 @@ export default function HeroSearch({
   const [activeTab, setActiveTab] = useState<SearchTab>("all");
   const [selectedTags, setSelectedTags] = useState<string[]>([]);
   const [cafes, setCafes] = useState<CafeSummary[]>(initialCafes);
+  const [searchFailed, setSearchFailed] = useState(false);
+  const [askAiOpen, setAskAiOpen] = useState(false);
+  // Snapshot of the query at the moment Ask AI opened, so the panel can seed
+  // its first question without re-firing as the user keeps typing.
+  const [aiSeed, setAiSeed] = useState("");
   const [, startTransition] = useTransition();
   const deferredQ = useDeferredValue(q);
   const containerRef = useRef<HTMLDivElement | null>(null);
@@ -57,10 +63,16 @@ export default function HeroSearch({
         .then((res) => (res.ok ? res.json() : Promise.reject(res)))
         .then((data: { cafes: CafeSummary[] }) => {
           setCafes(data.cafes);
+          setSearchFailed(false);
         })
         .catch((err) => {
           if (err?.name !== "AbortError") {
+            // Distinguish failure from genuine emptiness: clearing results
+            // alone made the dropdown confidently say "no cafes match your
+            // search" whenever the backend was down.
+            console.error("[search] request failed", err);
             setCafes([]);
+            setSearchFailed(true);
           }
         });
     });
@@ -69,18 +81,20 @@ export default function HeroSearch({
   }, [deferredQ, tagsKey, startTransition]);
 
   useEffect(() => {
-    if (!open) return;
+    if (!open && !askAiOpen) return;
     const onPointerDown = (e: MouseEvent) => {
       if (
         containerRef.current &&
         !containerRef.current.contains(e.target as Node)
       ) {
         setOpen(false);
+        setAskAiOpen(false);
       }
     };
     const onKey = (e: KeyboardEvent) => {
       if (e.key === "Escape") {
         setOpen(false);
+        setAskAiOpen(false);
         inputRef.current?.blur();
       }
     };
@@ -90,7 +104,7 @@ export default function HeroSearch({
       document.removeEventListener("mousedown", onPointerDown);
       document.removeEventListener("keydown", onKey);
     };
-  }, [open]);
+  }, [open, askAiOpen]);
 
   const toggleTag = useCallback((name: string) => {
     setSelectedTags((prev) =>
@@ -128,7 +142,8 @@ export default function HeroSearch({
     }
   };
 
-  const showPanel = open;
+  // The AI panel and the search dropdown occupy the same slot — never both.
+  const showPanel = open && !askAiOpen;
   const placeholder =
     variant === "nav"
       ? "Search cafes, tags, or areas..."
@@ -141,7 +156,10 @@ export default function HeroSearch({
     >
       <form
         onSubmit={handleSubmit}
-        className="flex w-full items-center gap-2 rounded-full border border-zinc-200 bg-white p-2"
+        /* The input suppresses its own outline for the pill look, so the visible
+           focus indicator lives on this wrapper via :focus-within — without it
+           the app's primary control had no focus state at all (WCAG 2.4.7). */
+        className="flex w-full items-center gap-2 rounded-full border border-zinc-200 bg-white p-2 transition-shadow focus-within:border-[#3A5A40] focus-within:ring-2 focus-within:ring-[#3A5A40]/40"
         role="search"
       >
         <div className="flex min-w-0 flex-1 flex-wrap items-center gap-2 pl-3">
@@ -216,6 +234,12 @@ export default function HeroSearch({
           {variant === "hero" ? (
             <button
               type="button"
+              onClick={() => {
+                setAiSeed(q);
+                setAskAiOpen(true);
+                setOpen(false);
+              }}
+              aria-expanded={askAiOpen}
               className="rounded-full border border-zinc-300 bg-transparent px-4 py-2 text-sm font-medium text-[#3b3b3b] transition-colors hover:bg-zinc-50"
             >
               Ask AI
@@ -230,6 +254,15 @@ export default function HeroSearch({
         </div>
       </form>
 
+      {askAiOpen ? (
+        <div className="absolute left-0 right-0 top-full z-50 mt-2">
+          <AskAIPanel
+            initialQuery={aiSeed}
+            onClose={() => setAskAiOpen(false)}
+          />
+        </div>
+      ) : null}
+
       {showPanel ? (
         <div
           id={listboxId}
@@ -241,6 +274,7 @@ export default function HeroSearch({
             tags={tags}
             cafes={cafes}
             cafesLoading={deferredQ !== q}
+            cafesFailed={searchFailed}
             activeTab={activeTab}
             selectedTags={selectedTags}
             onToggleTag={toggleTag}

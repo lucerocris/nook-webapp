@@ -1,0 +1,36 @@
+name: CI
+
+# Vercel runs `next build`, which typechecks but does not run ESLint in
+# Next 16 — so without this nothing checks lint before a deploy.
+#
+# Deliberately no `pnpm build` step. Under cacheComponents the static shell
+# prerenders components that query Supabase, so a build needs real credentials
+# and network access; with placeholders it throws and CI is red for reasons
+# unrelated to the change. Vercel's preview deployment already builds every PR
+# with the real environment, so that coverage exists — this job adds the lint
+# and type checks that nothing else runs.
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - run: pnpm install --frozen-lockfile
+
+      - run: pnpm lint
+
+      - run: pnpm exec tsc --noEmit

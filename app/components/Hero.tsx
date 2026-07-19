@@ -5,10 +5,11 @@ import { getSearchTags, searchCafes } from "@/lib/data/search";
 
 function HeroShell({ children }: { children: React.ReactNode }) {
   return (
-    <section className="relative overflow-hidden pt-48 pb-16 sm:pt-64 sm:pb-24">
+    <section className="relative pt-48 pb-16 sm:pt-64 sm:pb-24">
       {/* Decorative only — green glow behind the hero (page-wide dots come from
-          the body background). */}
-      <div aria-hidden className="pointer-events-none absolute inset-0">
+          the body background). overflow-hidden lives here, not on the section,
+          so the glow is clipped without also clipping the search dropdown. */}
+      <div aria-hidden className="pointer-events-none absolute inset-0 overflow-hidden">
         <div className="hero-glow absolute inset-x-0 top-0 h-[640px]" />
       </div>
 

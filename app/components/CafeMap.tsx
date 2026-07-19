@@ -671,9 +671,15 @@ async function buildCoffeePinCanvas(): Promise<HTMLCanvasElement> {
 }
 
 function escapeHtml(value: string): string {
+  // textContent -> innerHTML only escapes &, <, > and nbsp: the HTML fragment
+  // serializer escapes quotes ONLY inside attribute values, and this never
+  // produces one. These results are interpolated into double-quoted attributes
+  // (src="…", alt="…"), so an unescaped quote breaks out of the attribute.
+  // Cafe names are owner-editable via the business portal, which makes
+  // `x" onerror="…` a live stored-XSS path. Escape quotes explicitly.
   const div = document.createElement("div");
   div.textContent = value;
-  return div.innerHTML;
+  return div.innerHTML.replace(/"/g, "&quot;").replace(/'/g, "&#39;");
 }
 
 function iconSvg(path: string, size: number, fill: string): string {
@@ -719,7 +725,7 @@ function buildPopupCard(cafe: CafeSummary): HTMLElement {
   const container = document.createElement("div");
   container.className = "cafe-popup-card w-64 overflow-hidden rounded-2xl bg-white";
   container.innerHTML = `
-    <a href="/cafes/${cafe.id}" class="group block">
+    <a href="/cafes/${encodeURIComponent(cafe.id)}" class="group block">
       <div class="relative aspect-[4/3] w-full overflow-hidden rounded-t-xl bg-zinc-100">
         ${cover}
         ${newBadge}
