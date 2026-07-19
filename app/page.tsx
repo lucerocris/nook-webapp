@@ -12,10 +12,20 @@ type Props = {
   searchParams: Promise<{ lat?: string; lng?: string }>;
 };
 
+/** Coordinates are part of getHomeFeed's cache key, so precision here is
+ * precision in the number of distinct cache entries. The client sends 6
+ * decimals (~0.1 m), which makes every user at every position mint a private
+ * hours-long copy of the whole feed and effectively disables the cache.
+ * 3 decimals is ~110 m — well inside the nearby-radius granularity, and it
+ * caps entries at the number of distinct neighbourhoods. Rounded server-side
+ * so a hand-crafted ?lat= can't reintroduce the explosion. */
+const COORD_PRECISION = 3;
+
 function parseCoord(value: string | undefined): number | undefined {
   if (!value) return undefined;
   const parsed = Number(value);
-  return Number.isFinite(parsed) ? parsed : undefined;
+  if (!Number.isFinite(parsed)) return undefined;
+  return Number(parsed.toFixed(COORD_PRECISION));
 }
 
 export default function Home({ searchParams }: Props) {
