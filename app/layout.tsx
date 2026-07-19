@@ -10,9 +10,35 @@ const poppins = Poppins({
   weight: ["400", "500", "600"],
 });
 
+/** Absolute base for canonical/OG URLs. Set NEXT_PUBLIC_SITE_URL in production;
+ * without it, Open Graph images resolve relative and social cards break. */
+export const siteUrl =
+  process.env.NEXT_PUBLIC_SITE_URL ?? "https://nookph.app";
+
 export const metadata: Metadata = {
-  title: "Nook",
-  description: "Find your perfect study cafe.",
+  metadataBase: new URL(siteUrl),
+  title: {
+    default: "Nook — Philippine cafes, community curated",
+    template: "%s · Nook",
+  },
+  description:
+    "Find the perfect spot to work, study, or chill. Filter cafes by Wi-Fi, outlets, and vibe, or ask our AI to find your match.",
+  applicationName: "Nook",
+  alternates: { canonical: "/" },
+  openGraph: {
+    type: "website",
+    siteName: "Nook",
+    url: "/",
+    title: "Nook — Philippine cafes, community curated",
+    description:
+      "Find the perfect spot to work, study, or chill. Filter cafes by Wi-Fi, outlets, and vibe.",
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "Nook — Philippine cafes, community curated",
+    description:
+      "Find the perfect spot to work, study, or chill. Filter cafes by Wi-Fi, outlets, and vibe.",
+  },
 };
 
 function NavbarFallback() {

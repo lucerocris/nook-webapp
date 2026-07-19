@@ -1,4 +1,5 @@
 import { Suspense } from "react";
+import type { Metadata } from "next";
 import Image from "next/image";
 import Link from "next/link";
 import { notFound } from "next/navigation";
@@ -16,7 +17,6 @@ import CafeLocationMap from "@/app/components/CafeLocationMap";
 import CafeTagsOverview from "@/app/components/CafeTagsOverview";
 import MenuHighlightsRow from "@/app/components/MenuHighlightsRow";
 import { getCafeById, getMenuItems } from "@/lib/data/cafes";
-import { getCurrentUserId } from "@/lib/data/auth";
 import type { Review } from "@/lib/data/cafes-mappers";
 import { getTagIcon } from "@/lib/utils/tag-icon";
 import { parseOperatingHours } from "@/lib/utils/hours";
@@ -25,6 +25,67 @@ type Props = {
   params: Promise<{ id: string }>;
 };
 
+
+export async function generateMetadata({ params }: Props): Promise<Metadata> {
+  const { id } = await params;
+  const cafe = await getCafeById(id);
+
+  if (!cafe) {
+    // `absolute` bypasses the root layout's "%s · Nook" template, which would
+    // otherwise render "Cafe not found · Nook · Nook".
+    return {
+      title: { absolute: "Cafe not found · Nook" },
+      robots: { index: false },
+    };
+  }
+
+  const location = [cafe.neighborhood, cafe.city].filter(Boolean).join(", ");
+  const title = location ? `${cafe.name} — ${location}` : cafe.name;
+  const description =
+    cafe.description?.trim().slice(0, 160) ||
+    `${cafe.name}${location ? ` in ${location}` : ""} — hours, photos, menu and reviews on Nook.`;
+  const images = cafe.featuredImageUrl
+    ? [{ url: cafe.featuredImageUrl, alt: cafe.name }]
+    : undefined;
+
+  return {
+    title,
+    description,
+    alternates: { canonical: `/cafes/${cafe.id}` },
+    openGraph: {
+      type: "article",
+      title,
+      description,
+      url: `/cafes/${cafe.id}`,
+      siteName: "Nook",
+      images,
+    },
+    twitter: {
+      card: images ? "summary_large_image" : "summary",
+      title,
+      description,
+      images,
+    },
+  };
+}
+
+/**
+ * KNOWN LIMITATION — soft 404 on missing cafes.
+ *
+ * `notFound()` fires inside the Suspense child below, by which point the static
+ * shell has already flushed with HTTP 200. A missing cafe therefore renders the
+ * 404 body under a 200 status.
+ *
+ * This is architectural under `cacheComponents`, not an oversight. Resolving the
+ * cafe in the page body (so notFound() precedes the flush) fails the build with
+ * "Uncached data was accessed outside of <Suspense>"; `export const dynamic` is
+ * rejected outright; and `await connection()` does not lift the restriction.
+ *
+ * The commercial harm — Google indexing dead cafe URLs as live pages — is
+ * handled instead in generateMetadata above, which returns
+ * `robots: { index: false }` when the cafe is missing. Crawlers are told not to
+ * index; only the status code remains cosmetically wrong.
+ */
 export default async function CafeDetailPage({ params }: Props) {
   return (
     <Suspense fallback={<CafeDetailSkeleton />}>
@@ -35,10 +96,9 @@ export default async function CafeDetailPage({ params }: Props) {
 
 async function CafeDetailContent({ params }: Props) {
   const { id } = await params;
-  const userId = await getCurrentUserId();
 
   const [cafe, menu] = await Promise.all([
-    getCafeById(id, { userId }),
+    getCafeById(id),
     getMenuItems(id),
   ]);
 
@@ -208,12 +268,12 @@ async function CafeDetailContent({ params }: Props) {
               <div className="mt-2 flex flex-wrap items-center gap-1.5 text-xs leading-none text-[#101514]">
                 <span>{cafe.rating.toFixed(1)}</span>
                 <RatingStars rating={cafe.rating} size={12} />
-                <span className="text-[#858585]">
+                <span className="text-[#6b6b6b]">
                   ({cafe.reviewCount} reviews)
                 </span>
               </div>
 
-              <p className="mt-3 text-xs leading-none text-[#858585]">
+              <p className="mt-3 text-xs leading-none text-[#6b6b6b]">
                 {[distanceLabel, cafe.address].filter(Boolean).join(" • ")}
               </p>
 
@@ -223,9 +283,9 @@ async function CafeDetailContent({ params }: Props) {
                   return (
                     <span
                       key={tag.id}
-                      className="inline-flex h-7 items-center gap-2 rounded-full border border-[#8a8d8a] px-3 text-xs font-medium text-[#858585]"
+                      className="inline-flex h-7 items-center gap-2 rounded-full border border-[#8a8d8a] px-3 text-xs font-medium text-[#6b6b6b]"
                     >
-                      <Icon size={14} className="text-[#858585]" />
+                      <Icon size={14} className="text-[#6b6b6b]" />
                       {tag.name}
                     </span>
                   );
