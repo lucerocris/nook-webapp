@@ -3,6 +3,7 @@ import { Poppins } from "next/font/google";
 import { Suspense } from "react";
 import "./globals.css";
 import Navbar from "./components/Navbar";
+import { SITE_URL } from "@/lib/env";
 
 const poppins = Poppins({
   variable: "--font-poppins",
@@ -10,10 +11,11 @@ const poppins = Poppins({
   weight: ["400", "500", "600"],
 });
 
-/** Absolute base for canonical/OG URLs. Set NEXT_PUBLIC_SITE_URL in production;
- * without it, Open Graph images resolve relative and social cards break. */
-export const siteUrl =
-  process.env.NEXT_PUBLIC_SITE_URL ?? "https://nookph.app";
+/** Re-exported for existing callers. The value lives in lib/env so that
+ * robots.ts and sitemap.ts can read it without importing this module — they
+ * need one string, and importing the layout drags next/font and the whole
+ * Navbar client tree into two metadata routes. */
+export const siteUrl = SITE_URL;
 
 export const metadata: Metadata = {
   metadataBase: new URL(siteUrl),

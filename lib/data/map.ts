@@ -1,4 +1,5 @@
 import "server-only";
+import { SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY } from "@/lib/env";
 
 import { createClient as createSupabaseClient } from "@supabase/supabase-js";
 
@@ -13,8 +14,8 @@ type AnonClient = ReturnType<typeof createSupabaseClient<Database>>;
 // `"use cache"` — caching by bounds would never hit.
 function createAnonClient(): AnonClient {
   return createSupabaseClient<Database>(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY!,
+    SUPABASE_URL,
+    SUPABASE_PUBLISHABLE_KEY,
     {
       auth: { persistSession: false, autoRefreshToken: false },
     },

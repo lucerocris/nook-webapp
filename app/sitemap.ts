@@ -1,7 +1,7 @@
 import type { MetadataRoute } from "next";
 
 import { getSitemapCafes } from "@/lib/data/cafes";
-import { siteUrl } from "./layout";
+import { SITE_URL as siteUrl } from "@/lib/env";
 
 /** Cafe detail pages are the commercially important URLs; without a sitemap
  * they have no crawl path beyond incidental internal links. */
