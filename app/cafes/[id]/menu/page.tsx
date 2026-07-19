@@ -62,7 +62,6 @@ export default function MenuScreen() {
 
         {/* Featured Drinks */}
         <ScrollView
-          horizontal
           showsHorizontalScrollIndicator={false}
           contentContainerStyle={styles.horizontal}
         >
