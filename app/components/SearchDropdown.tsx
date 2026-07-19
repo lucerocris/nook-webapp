@@ -15,6 +15,9 @@ type Props = {
   tags: SearchTags;
   cafes: CafeSummary[];
   cafesLoading: boolean;
+  /** True when the last search request failed, so the UI can say "couldn't
+   * load" instead of the misleading "no cafes match your search". */
+  cafesFailed?: boolean;
   activeTab: SearchTab;
   selectedTags: string[];
   onToggleTag: (name: string) => void;
@@ -115,6 +118,7 @@ export default function SearchDropdown({
   tags,
   cafes,
   cafesLoading,
+  cafesFailed = false,
   activeTab,
   selectedTags,
   onToggleTag,
@@ -279,6 +283,11 @@ export default function SearchDropdown({
                 <LoadingDots className="text-[#3A5A40]" label="Searching cafes" />
                 <span>Searching cafes</span>
               </div>
+            ) : cafesFailed ? (
+              <EmptyHint>
+                Couldn&apos;t load results — check your connection and try
+                again.
+              </EmptyHint>
             ) : visibleCafes.length === 0 ? (
               <EmptyHint>
                 {q ? "No cafes match your search yet." : "No cafes available."}

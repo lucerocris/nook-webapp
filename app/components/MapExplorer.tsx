@@ -29,6 +29,7 @@ export default function MapExplorer({ initialCafes, query, tags }: Props) {
   const [cafes, setCafes] = useState<CafeSummary[]>(initialCafes);
   const [selectedCafeId, setSelectedCafeId] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+  const [fetchFailed, setFetchFailed] = useState(false);
   const [focusPoint, setFocusPoint] = useState<{
     lat: number;
     lng: number;
@@ -63,9 +64,13 @@ export default function MapExplorer({ initialCafes, query, tags }: Props) {
   // Keep the latest filters in a ref so the (stable) viewport handler passed
   // to the map never captures stale values.
   const tagsKey = activeTags.join(",");
-  const filtersRef = useRef({ query, tagsKey });
+  const filtersRef = useRef<{ query?: string; tagsKey: string; sort: SortId }>({
+    query,
+    tagsKey,
+    sort: "nearby",
+  });
   useEffect(() => {
-    filtersRef.current = { query, tagsKey };
+    filtersRef.current = { ...filtersRef.current, query, tagsKey };
   }, [query, tagsKey]);
 
   const abortRef = useRef<AbortController | null>(null);
@@ -76,9 +81,11 @@ export default function MapExplorer({ initialCafes, query, tags }: Props) {
 
   const fetchForViewport = useCallback((viewport: MapViewport) => {
     const params = new URLSearchParams();
-    const { query: q, tagsKey: tk } = filtersRef.current;
+    const { query: q, tagsKey: tk, sort } = filtersRef.current;
     if (q) params.set("q", q);
     if (tk) params.set("tags", tk);
+    // Previously the chosen sort never left the modal's local state.
+    if (sort && sort !== "nearby") params.set("sort", sort);
 
     if (viewportRadiusMeters(viewport) <= RADIUS_METERS) {
       // Zoomed in: fetch a fixed 20 km radius around the map center.
@@ -104,10 +111,16 @@ export default function MapExplorer({ initialCafes, query, tags }: Props) {
       .then((res) => (res.ok ? res.json() : Promise.reject(res)))
       .then((data: { cafes: CafeSummary[] }) => {
         setCafes(data.cafes);
+        setFetchFailed(false);
       })
       .catch((err) => {
-        // On abort we keep the previous list; other errors leave it untouched.
+        // On abort we keep the previous list — a newer request is in flight.
         if (err?.name === "AbortError") return;
+        // Any other failure previously fell off the end of this handler: the
+        // spinner cleared, the stale pin set stayed on screen, and the header
+        // kept claiming "N cafes in view" for an area that was never queried.
+        console.error("[map] viewport fetch failed", err);
+        setFetchFailed(true);
       })
       .finally(() => {
         if (abortRef.current === controller) setLoading(false);
@@ -132,7 +145,7 @@ export default function MapExplorer({ initialCafes, query, tags }: Props) {
       setActiveTags(nextTags);
       // Update the ref synchronously so the immediate re-fetch below picks up
       // the new tags without waiting for the syncing effect to run.
-      filtersRef.current = { query, tagsKey: nextTags.join(",") };
+      filtersRef.current = { query, tagsKey: nextTags.join(","), sort };
       setFilterOpen(false);
       if (lastViewportRef.current) fetchForViewport(lastViewportRef.current);
     },
@@ -142,7 +155,7 @@ export default function MapExplorer({ initialCafes, query, tags }: Props) {
   const clearFilters = useCallback(() => {
     setActiveSort("nearby");
     setActiveTags([]);
-    filtersRef.current = { query, tagsKey: "" };
+    filtersRef.current = { query, tagsKey: "", sort: "nearby" };
     setFilterOpen(false);
     if (lastViewportRef.current) fetchForViewport(lastViewportRef.current);
   }, [query, fetchForViewport]);
@@ -224,6 +237,26 @@ export default function MapExplorer({ initialCafes, query, tags }: Props) {
               <div className="flex items-center gap-2 rounded-full bg-white/95 px-3.5 py-2 text-xs font-medium text-zinc-500 shadow-md ring-1 ring-zinc-200/70 backdrop-blur">
                 <LoadingDots className="text-[#3A5A40]" label="Updating results" />
                 <span>Updating</span>
+              </div>
+            </div>
+          ) : fetchFailed ? (
+            <div className="absolute inset-x-0 top-3 z-10 flex justify-center px-3">
+              <div
+                role="status"
+                className="flex items-center gap-2 rounded-full bg-white/95 px-3.5 py-2 text-xs font-medium text-[#b94a48] shadow-md ring-1 ring-zinc-200/70 backdrop-blur"
+              >
+                <span>Couldn&apos;t update results for this area</span>
+                <button
+                  type="button"
+                  onClick={() => {
+                    if (lastViewportRef.current) {
+                      fetchForViewport(lastViewportRef.current);
+                    }
+                  }}
+                  className="font-semibold text-[#3A5A40] underline underline-offset-2"
+                >
+                  Retry
+                </button>
               </div>
             </div>
           ) : null}
