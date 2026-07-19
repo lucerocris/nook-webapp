@@ -22,10 +22,27 @@ export default function BusinessHoursDropdown({ hours }: Props) {
   const [open, setOpen] = useState(false);
   const buttonRef = useRef<HTMLButtonElement>(null);
 
-  const now = useMemo(() => new Date(), []);
-  const todayKey = useMemo(() => getCurrentDayKey(now), [now]);
-  const today = hours[todayKey] ?? null;
-  const openNow = useMemo(() => isOpenNow(hours, now), [hours, now]);
+  // `new Date()` evaluated during render ran twice with different values —
+  // once on the server, once at hydration — so a cafe closing at 21:00 could
+  // render "Open Now" at 20:59:59 and hydrate to "Closed" a second later,
+  // mismatching statusText/statusClass and, across midnight, the isToday row.
+  // Time-dependent output is therefore withheld until after mount, and then
+  // refreshed each minute so a long-lived tab stops showing a frozen badge.
+  const [now, setNow] = useState<Date | null>(null);
+
+  useEffect(() => {
+    const tick = () => setNow(new Date());
+    tick();
+    const id = setInterval(tick, 60_000);
+    return () => clearInterval(id);
+  }, []);
+
+  const todayKey = useMemo(() => (now ? getCurrentDayKey(now) : null), [now]);
+  const today = todayKey ? (hours[todayKey] ?? null) : null;
+  const openNow = useMemo(
+    () => (now ? isOpenNow(hours, now) : null),
+    [hours, now],
+  );
   const todayRange = useMemo(() => formatTimeRange(today), [today]);
 
   const weekRows = useMemo(
@@ -55,13 +72,24 @@ export default function BusinessHoursDropdown({ hours }: Props) {
     return () => window.removeEventListener("keydown", onKey);
   }, [open]);
 
-  const statusText = openNow ? "Open Now" : "Closed";
-  const statusClass = openNow ? "text-[#557f55]" : "text-[#b94a48]";
-  const subtitle = today
-    ? today.closed
-      ? "Closed today"
-      : todayRange
-    : "Hours not available";
+  // `null` until mounted — "Hours" is the neutral label that reserves the same
+  // line without asserting a status the server had no way to know.
+  const statusText =
+    openNow === null ? "Hours" : openNow ? "Open Now" : "Closed";
+  const statusClass =
+    openNow === null
+      ? "text-[#6b6b6b]"
+      : openNow
+        ? "text-[#557f55]"
+        : "text-[#b94a48]";
+  const subtitle =
+    now === null
+      ? " "
+      : today
+        ? today.closed
+          ? "Closed today"
+          : todayRange
+        : "Hours not available";
 
   return (
     <div className="mt-6 border-t border-[#e5e5e5] pt-6">
