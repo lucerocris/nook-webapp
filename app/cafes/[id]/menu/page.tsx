@@ -66,7 +66,7 @@ async function CafeMenuRender({ params }: Props) {
                 {item.name}
               </h2>
               <p className="mt-1 text-sm text-[#6b6b6b]">
-                {formatPrice(item.price)}
+                {formatPrice(displayPrice(item))}
               </p>
             </li>
           ))}
@@ -96,7 +96,7 @@ async function CafeMenuRender({ params }: Props) {
                   ) : null}
                   {item.variants.length > 0 ? (
                     <p className="mt-2 text-xs text-[#6b6b6b]">
-                      {item.variants
+                      {sortedVariants(item)
                         .map(
                           (variant) =>
                             `${variant.label} ${formatPrice(
@@ -109,7 +109,7 @@ async function CafeMenuRender({ params }: Props) {
                 </div>
 
                 <p className="shrink-0 text-sm font-semibold text-[#101514]">
-                  {formatPrice(item.price)}
+                  {formatPrice(displayPrice(item))}
                 </p>
               </li>
             ))}
@@ -143,6 +143,26 @@ function HighlightThumbnail({ item }: { item: MenuItem }) {
 
 function variantPrice(item: MenuItem, variant: MenuItemVariant) {
   return variant.priceOverride ?? item.price + variant.priceModifier;
+}
+
+/** The price to headline for an item. `menu_items.price` is the base, but a
+ * variant flagged is_default can carry a price_override — without this an item
+ * whose default Small overrides to 120 headlines its base of 0 as "P0.00"
+ * right next to "Small P120.00". */
+function displayPrice(item: MenuItem) {
+  const preferred =
+    item.variants.find((variant) => variant.isDefault) ?? null;
+  return preferred ? variantPrice(item, preferred) : item.price;
+}
+
+/** menu_item_variants has a sort_order that the mapper reads and nothing used,
+ * and the RPC aggregates variants without a stable tiebreak — so sizes could
+ * render "Large · Small · Medium" on one request and differently on the next,
+ * then freeze that way for the life of the cache entry. */
+function sortedVariants(item: MenuItem): MenuItemVariant[] {
+  return [...item.variants].sort(
+    (a, b) => a.sortOrder - b.sortOrder || a.label.localeCompare(b.label),
+  );
 }
 
 // get_menu_items has no ORDER BY, so row order is whatever Postgres happens to
