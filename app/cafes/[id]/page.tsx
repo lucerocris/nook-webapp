@@ -7,11 +7,11 @@ import {
   Heart,
   MapPin,
   NavigationArrow,
-  ShareNetwork,
   Star,
 } from "@phosphor-icons/react/dist/ssr";
 
 import BusinessHoursDropdown from "@/app/components/BusinessHoursDropdown";
+import ShareButton from "@/app/components/ShareButton";
 import CafeDetailSkeleton from "@/app/components/CafeDetailSkeleton";
 import CafeLocationMap from "@/app/components/CafeLocationMap";
 import CafeTagsOverview from "@/app/components/CafeTagsOverview";
@@ -141,13 +141,10 @@ async function CafeDetailContent({ params }: Props) {
           </div>
 
           <div className="flex gap-2">
-            <button
-              type="button"
-              aria-label="Share cafe"
-              className="flex h-10 w-10 items-center justify-center rounded-full border border-zinc-200 bg-white text-[#3b3b3b] transition-colors hover:bg-zinc-50"
-            >
-              <ShareNetwork size={18} />
-            </button>
+            <ShareButton
+              title={cafe.name}
+              text={`${cafe.name} on Nook — cafes in Cebu`}
+            />
             <button
               type="button"
               aria-label="Save cafe"
