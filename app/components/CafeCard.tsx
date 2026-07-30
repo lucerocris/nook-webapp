@@ -1,6 +1,6 @@
 import Image from "next/image";
 import Link from "next/link";
-import { Coffee, Heart, Star } from "@phosphor-icons/react/dist/ssr";
+import { Coffee, Star } from "@phosphor-icons/react/dist/ssr";
 
 import { formatDistance } from "@/lib/utils/format";
 import type { CafeSummary } from "@/lib/data/cafes-mappers";
@@ -112,14 +112,9 @@ export default function CafeCard({ cafe, priority, variant = "default" }: Props)
       <article className="flex flex-col rounded-2xl bg-white">
         <CardImage cafe={cafe} priority={priority} rounded="rounded-xl" />
 
-        <div className="mt-3 flex items-center justify-between">
-          <span className="text-sm font-semibold text-[#3b3b3b]">{cafe.name}</span>
-          <Heart
-            size={20}
-            weight={cafe.isFavorited ? "fill" : "regular"}
-            className={cafe.isFavorited ? "text-[#3A5A40]" : "text-zinc-300"}
-          />
-        </div>
+        <span className="mt-3 block text-sm font-semibold text-[#3b3b3b]">
+          {cafe.name}
+        </span>
 
         <div className="mt-2 flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-[#3b3b3b]">
           {cafe.rating > 0 ? (
