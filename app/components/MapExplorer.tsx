@@ -1,8 +1,14 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
-import { FunnelSimple } from "@phosphor-icons/react/dist/ssr";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
+import {
+  FunnelSimple,
+  ListBullets,
+  MapTrifold,
+} from "@phosphor-icons/react/dist/ssr";
 
+import { cn } from "@/lib/utils";
 import CafeCard from "./CafeCard";
 import CafeMap from "./CafeMap";
 import LoadingDots from "./LoadingDots";
@@ -26,6 +32,26 @@ const RADIUS_METERS = 20000; // 20 km
 const MOVE_DEBOUNCE_MS = 300;
 
 export default function MapExplorer({ initialCafes, query, tags }: Props) {
+  // Which surface is showing below `lg`. Held in the URL rather than component
+  // state, the way Fresha does it (`?mode=map`): the browser Back button
+  // returns from the map to the list, and a map view can be linked. At `lg`
+  // and up both panes are on screen and this is ignored.
+  const router = useRouter();
+  const pathname = usePathname();
+  const searchParams = useSearchParams();
+  const isMapView = searchParams.get("view") === "map";
+
+  const setView = useCallback(
+    (view: "list" | "map") => {
+      const next = new URLSearchParams(searchParams.toString());
+      if (view === "map") next.set("view", "map");
+      else next.delete("view");
+      const qs = next.toString();
+      router.push(qs ? `${pathname}?${qs}` : pathname, { scroll: false });
+    },
+    [pathname, router, searchParams],
+  );
+
   const [cafes, setCafes] = useState<CafeSummary[]>(initialCafes);
   const [selectedCafeId, setSelectedCafeId] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
@@ -179,32 +205,68 @@ export default function MapExplorer({ initialCafes, query, tags }: Props) {
       ? `Cafes tagged ${activeTags.map((t) => `"${t}"`).join(", ")}`
       : "Explore cafes on the map";
 
+  const controls = (
+    <>
+      {/* Below `lg` this swaps the whole surface instead of splitting it; at
+          `lg` both panes are already visible so the toggle has nothing to do. */}
+      {/* Icon-only on a phone, labelled from `sm` up. Two labelled pills ate
+          244px of a 390px header and squeezed the heading onto three lines;
+          Fresha keeps these to bare icons at this width for the same reason. */}
+      <button
+        type="button"
+        onClick={() => setView(isMapView ? "list" : "map")}
+        aria-label={isMapView ? "Show list" : "Show map"}
+        className="flex h-11 w-11 shrink-0 items-center justify-center gap-2 rounded-full border border-zinc-300 bg-white text-sm font-medium text-[#3b3b3b] transition-colors hover:bg-zinc-50 sm:w-auto sm:px-4 lg:hidden"
+      >
+        {isMapView ? (
+          <ListBullets size={18} weight="bold" />
+        ) : (
+          <MapTrifold size={18} weight="bold" />
+        )}
+        <span className="hidden sm:inline">
+          {isMapView ? "Show list" : "Show map"}
+        </span>
+      </button>
+      <button
+        type="button"
+        onClick={() => setFilterOpen(true)}
+        aria-label="Filters"
+        className="flex h-11 shrink-0 items-center justify-center gap-2 rounded-full border border-zinc-300 bg-white px-3 text-sm font-medium text-[#3b3b3b] transition-colors hover:bg-zinc-50 sm:px-4"
+      >
+        <FunnelSimple size={18} weight="bold" />
+        <span className="hidden sm:inline">Filters</span>
+        {activeFilterCount > 0 ? (
+          <span className="flex h-5 min-w-5 items-center justify-center rounded-full bg-[#3A5A40] px-1.5 text-xs font-semibold text-white">
+            {activeFilterCount}
+          </span>
+        ) : null}
+      </button>
+    </>
+  );
+
+  const countLine = `${mappable.length} ${
+    mappable.length === 1 ? "cafe" : "cafes"
+  } in view`;
+
   return (
     <div className="flex h-full w-full flex-col lg:flex-row">
-      <div className="flex w-full flex-col overflow-y-auto lg:h-full lg:w-1/2">
+      <div
+        className={cn(
+          "w-full flex-col overflow-y-auto lg:flex lg:h-full lg:w-1/2",
+          // One surface at a time on a phone. The old layout gave the list
+          // ~384px and the map ~380px of an 844px screen, which is too little
+          // of either to be useful.
+          isMapView ? "hidden" : "flex h-full",
+        )}
+      >
         <div className="flex shrink-0 items-start justify-between gap-3 px-6 pb-3 pt-8 sm:px-8">
-          <div>
+          <div className="min-w-0">
             <h1 className="text-lg font-semibold text-[#101514]">
               {displayHeading}
             </h1>
-            <p className="mt-1 text-sm text-zinc-500">
-              {mappable.length} {mappable.length === 1 ? "cafe" : "cafes"} in
-              view
-            </p>
+            <p className="mt-1 text-sm text-zinc-500">{countLine}</p>
           </div>
-          <button
-            type="button"
-            onClick={() => setFilterOpen(true)}
-            className="flex shrink-0 items-center gap-2 rounded-full border border-zinc-300 bg-white px-4 py-2 text-sm font-medium text-[#3b3b3b] transition-colors hover:bg-zinc-50"
-          >
-            <FunnelSimple size={18} weight="bold" />
-            Filters
-            {activeFilterCount > 0 ? (
-              <span className="flex h-5 min-w-5 items-center justify-center rounded-full bg-[#3A5A40] px-1.5 text-xs font-semibold text-white">
-                {activeFilterCount}
-              </span>
-            ) : null}
-          </button>
+          <div className="flex shrink-0 items-center gap-2">{controls}</div>
         </div>
 
         {mappable.length === 0 ? (
@@ -230,17 +292,39 @@ export default function MapExplorer({ initialCafes, query, tags }: Props) {
         )}
       </div>
 
-      <div className="h-[45vh] w-full shrink-0 p-4 sm:p-6 lg:h-full lg:w-1/2">
-        <div className="relative h-full w-full overflow-hidden rounded-2xl border border-zinc-200 shadow-sm">
+      {/* `h-[45vh]` here used to sit inside a `100dvh` parent — `vh` resolves
+          against the largest viewport and `dvh` against the visible one, so with
+          the address bar showing the two panes didn't add up. The map now just
+          fills whatever the parent gives it. */}
+      <div
+        className={cn(
+          "w-full shrink-0 lg:block lg:h-full lg:w-1/2 lg:p-6",
+          isMapView ? "block h-full" : "hidden",
+        )}
+      >
+        <div className="relative h-full w-full overflow-hidden border-zinc-200 lg:rounded-2xl lg:border lg:shadow-sm">
+          {/* In map view the controls ride over the map rather than stealing
+              height from it — the list pane is off screen, so this is the only
+              way back and the only way to the filters. */}
+          <div className="pointer-events-none absolute inset-x-0 top-0 z-10 flex items-start justify-between gap-3 p-3 lg:hidden">
+            <span className="pointer-events-auto rounded-full bg-white/95 px-3 py-2 text-xs font-medium text-[#3b3b3b] shadow-sm ring-1 ring-zinc-200/70 backdrop-blur">
+              {countLine}
+            </span>
+            <div className="pointer-events-auto flex shrink-0 items-center gap-2">
+              {controls}
+            </div>
+          </div>
+          {/* These sit at `top-16` below `lg` to clear the floating control
+              row above, and back at `top-3` once that row is gone. */}
           {loading ? (
-            <div className="pointer-events-none absolute inset-x-0 top-3 z-10 flex justify-center">
+            <div className="pointer-events-none absolute inset-x-0 top-16 z-10 flex justify-center lg:top-3">
               <div className="flex items-center gap-2 rounded-full bg-white/95 px-3.5 py-2 text-xs font-medium text-zinc-500 shadow-md ring-1 ring-zinc-200/70 backdrop-blur">
                 <LoadingDots className="text-[#3A5A40]" label="Updating results" />
                 <span>Updating</span>
               </div>
             </div>
           ) : fetchFailed ? (
-            <div className="absolute inset-x-0 top-3 z-10 flex justify-center px-3">
+            <div className="absolute inset-x-0 top-16 z-10 flex justify-center px-3 lg:top-3">
               <div
                 role="status"
                 className="flex items-center gap-2 rounded-full bg-white/95 px-3.5 py-2 text-xs font-medium text-[#b94a48] shadow-md ring-1 ring-zinc-200/70 backdrop-blur"

@@ -41,7 +41,9 @@ function MapSkeleton() {
           ))}
         </div>
       </div>
-      <div className="h-[45vh] w-full shrink-0 p-4 sm:p-6 lg:h-full lg:w-1/2">
+      {/* The map pane only exists at `lg`; below that the list is the whole
+          surface until the user asks for the map. */}
+      <div className="hidden shrink-0 lg:block lg:h-full lg:w-1/2 lg:p-6">
         <div className="h-full w-full rounded-2xl bg-zinc-100" />
       </div>
     </div>
