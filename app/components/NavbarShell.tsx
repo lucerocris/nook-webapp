@@ -77,7 +77,12 @@ export default function NavbarShell({
     >
       <nav
         className={[
-          "mx-auto flex h-20 items-center gap-6 px-6 sm:px-8",
+          // `justify-between` rather than relying on the spacer below: on the
+          // map page the middle element is `hidden` under `md`, and `display:
+          // none` means its `flex-1` never applies. With no spacer the logo and
+          // the buttons bunched up on the left, which put the right-anchored
+          // account menu ~86px off the left edge of a 390px screen.
+          "mx-auto flex h-20 items-center justify-between gap-6 px-6 sm:px-8",
           // On the map page the content is full-width, so the navbar spans the
           // full width too; elsewhere it stays capped and centered.
           isMapPage ? "max-w-none" : "max-w-7xl",
