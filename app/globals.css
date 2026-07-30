@@ -14,18 +14,37 @@
 body {
   background-color: var(--background);
   /* Faint green dot grid across the whole page. Cards/sections sit on top with
-     their own white surfaces; the dots show through the gaps and margins. */
+     their own white surfaces; the dots show through the gaps and margins.
+
+     Deliberately weakest on a phone. The grid is a fixed 22px regardless of
+     viewport, so the same dots that read as texture behind a wide desktop
+     layout end up crowding the much narrower column of a phone — where the
+     gaps and margins the dots show through are most of the screen. Density is
+     the problem, so both the opacity and the spacing ease off at the bottom. */
   background-image: radial-gradient(
     circle,
-    rgba(58, 90, 64, 0.16) 1px,
+    rgba(58, 90, 64, 0.06) 1px,
     transparent 1.6px
   );
-  background-size: 22px 22px;
+  background-size: 26px 26px;
   /* Keep the dot grid pinned to the viewport so it stays static as the page
      scrolls, rather than moving with the content. */
   background-attachment: fixed;
   color: var(--foreground);
   font-family: var(--font-poppins), ui-sans-serif, system-ui, sans-serif;
+}
+
+/* Wider viewports can carry more of it — still well under the 0.16 the grid
+   used to sit at everywhere. */
+@media (min-width: 640px) {
+  body {
+    background-image: radial-gradient(
+      circle,
+      rgba(58, 90, 64, 0.1) 1px,
+      transparent 1.6px
+    );
+    background-size: 24px 24px;
+  }
 }
 
 /* Decorative hero backdrop (see Hero.tsx). Purely presentational, aria-hidden.
