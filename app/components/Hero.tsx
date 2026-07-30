@@ -5,7 +5,10 @@ import { getSearchTags, searchCafes } from "@/lib/data/search";
 
 function HeroShell({ children }: { children: React.ReactNode }) {
   return (
-    <section className="relative pt-48 pb-16 sm:pt-64 sm:pb-24">
+    /* `pt-48` was 192px of empty space above the heading on every phone — a
+       third of a 568px viewport, to clear an 80px navbar. Scaled down at the
+       narrow end so the search bar's buttons stay above the fold. */
+    <section className="relative pt-32 pb-16 sm:pt-48 sm:pb-24 lg:pt-64">
       {/* Decorative only — green glow behind the hero (page-wide dots come from
           the body background). overflow-hidden lives here, not on the section,
           so the glow is clipped without also clipping the search dropdown. */}
@@ -40,7 +43,10 @@ function HeroSearchFallback() {
   return (
     <div
       aria-hidden="true"
-      className="mt-6 h-[52px] w-full animate-pulse rounded-full bg-zinc-100"
+      /* Matches the real control's height at each breakpoint — stacked below
+         `sm` it is 112px (8 + 44 + 8 + 44 + 8), one row above. A flat 52px
+         here shifted the whole page down when the search bar streamed in. */
+      className="mt-6 h-[112px] w-full animate-pulse rounded-3xl bg-zinc-100 sm:h-[60px] sm:rounded-full"
     />
   );
 }

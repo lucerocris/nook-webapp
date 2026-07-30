@@ -159,7 +159,12 @@ export default function HeroSearch({
         /* The input suppresses its own outline for the pill look, so the visible
            focus indicator lives on this wrapper via :focus-within — without it
            the app's primary control had no focus state at all (WCAG 2.4.7). */
-        className="flex w-full items-center gap-2 rounded-full border border-zinc-200 bg-white p-2 transition-shadow focus-within:border-[#3A5A40] focus-within:ring-2 focus-within:ring-[#3A5A40]/40"
+        /* Stacked below `sm`. Side by side, the two shrink-0 buttons claimed
+           165px of a ~272px pill, leaving less than the input's 128px floor —
+           so it wrapped inside this flex-wrap row and the placeholder rendered
+           underneath the Ask AI button (60px of overlap at 320, 20px at 360).
+           On its own row the field gets the full width instead of a sliver. */
+        className="flex w-full flex-col gap-2 rounded-3xl border border-zinc-200 bg-white p-2 transition-shadow focus-within:border-[#3A5A40] focus-within:ring-2 focus-within:ring-[#3A5A40]/40 sm:flex-row sm:items-center sm:rounded-full"
         role="search"
       >
         <div className="flex min-w-0 flex-1 flex-wrap items-center gap-2 pl-3">
@@ -221,7 +226,11 @@ export default function HeroSearch({
             onFocus={() => setOpen(true)}
             onKeyDown={handleKeyDown}
             placeholder={selectedTags.length > 0 ? "Add more..." : placeholder}
-            className="min-w-[8rem] flex-1 bg-transparent text-sm text-[#3b3b3b] placeholder:text-zinc-400 outline-none focus:ring-0"
+            /* `text-base` below `sm` is not cosmetic: iOS Safari zooms the
+               whole viewport when a focused input is under 16px. `py-2.5`
+               takes the field from a 20px-tall hit target to 44px. The 8rem
+               floor only applies once there is room for it. */
+            className="min-w-0 flex-1 bg-transparent py-2.5 text-base text-[#3b3b3b] placeholder:text-zinc-400 outline-none focus:ring-0 sm:min-w-[8rem] sm:py-3 sm:text-sm"
             autoComplete="off"
             role="combobox"
             aria-expanded={showPanel}
@@ -230,7 +239,9 @@ export default function HeroSearch({
           />
         </div>
 
-        <div className="flex shrink-0 items-center gap-2">
+        {/* Full width on their own row below `sm`, each taking half; back to
+            intrinsic width alongside the field from `sm` up. */}
+        <div className="flex w-full shrink-0 items-center gap-2 sm:w-auto">
           {variant === "hero" ? (
             <button
               type="button"
@@ -240,14 +251,14 @@ export default function HeroSearch({
                 setOpen(false);
               }}
               aria-expanded={askAiOpen}
-              className="rounded-full border border-zinc-300 bg-transparent px-4 py-2 text-sm font-medium text-[#3b3b3b] transition-colors hover:bg-zinc-50"
+              className="flex h-11 flex-1 items-center justify-center rounded-full border border-zinc-300 bg-transparent px-4 text-sm font-medium text-[#3b3b3b] transition-colors hover:bg-zinc-50 sm:flex-none"
             >
               Ask AI
             </button>
           ) : null}
           <button
             type="submit"
-            className="rounded-full bg-[#3A5A40] px-5 py-2 text-sm font-medium text-white transition-colors hover:bg-[#2f4833]"
+            className="flex h-11 flex-1 items-center justify-center rounded-full bg-[#3A5A40] px-5 text-sm font-medium text-white transition-colors hover:bg-[#2f4833] sm:flex-none"
           >
             Search
           </button>
