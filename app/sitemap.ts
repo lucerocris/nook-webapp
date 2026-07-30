@@ -9,6 +9,13 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const staticRoutes: MetadataRoute.Sitemap = [
     { url: `${siteUrl}/`, changeFrequency: "daily", priority: 1 },
     { url: `${siteUrl}/map`, changeFrequency: "daily", priority: 0.8 },
+    // The only route pointing at the iOS listing, so it needs a crawl path of
+    // its own — nothing links to it but the footer and the account menu.
+    {
+      url: `${siteUrl}/download-app`,
+      changeFrequency: "monthly",
+      priority: 0.6,
+    },
   ];
 
   let cafeRoutes: MetadataRoute.Sitemap = [];

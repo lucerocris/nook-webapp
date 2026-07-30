@@ -7,10 +7,9 @@ const exploreLinks = [
   { label: "Download the app", href: "/download-app" },
 ];
 
-const accountLinks = [
-  { label: "Log in", href: "/login" },
-  { label: "Sign up", href: "/signup" },
-];
+// The Account column (Log in / Sign up) is out while accounts are shelved —
+// removing the two links would have left an empty column with a heading.
+// `/login` and `/signup` still exist, they are just not linked from anywhere.
 
 export default function Footer() {
   return (
@@ -31,10 +30,7 @@ export default function Footer() {
             </p>
           </div>
 
-          <div className="grid grid-cols-2 gap-10 sm:gap-16">
-            <FooterColumn title="Explore" links={exploreLinks} />
-            <FooterColumn title="Account" links={accountLinks} />
-          </div>
+          <FooterColumn title="Explore" links={exploreLinks} />
         </div>
 
         <div className="mt-12 flex flex-col gap-4 border-t border-white/15 pt-6 sm:flex-row sm:items-center sm:justify-between">
