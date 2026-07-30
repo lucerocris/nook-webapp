@@ -26,6 +26,15 @@ export const metadata: Metadata = {
   description:
     "Find the perfect spot to work, study, or chill. Filter cafes by Wi-Fi, outlets, and vibe, or ask our AI to find your match.",
   applicationName: "Nook",
+  /* Same mark and same mechanism as nook-business, so the two sites share one
+     favicon. Declared here rather than as an `app/favicon.ico` file convention
+     — that convention wins over metadata, and it is what kept serving
+     create-next-app's Vercel triangle. */
+  icons: {
+    icon: "/nookGlasses.svg",
+    shortcut: "/nookGlasses.svg",
+    apple: "/nookGlasses.svg",
+  },
   alternates: { canonical: "/" },
   openGraph: {
     type: "website",
