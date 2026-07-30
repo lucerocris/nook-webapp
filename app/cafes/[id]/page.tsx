@@ -1,19 +1,16 @@
 import { Suspense } from "react";
 import type { Metadata } from "next";
-import Image from "next/image";
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import {
-  Heart,
-  MapPin,
-  NavigationArrow,
-  Star,
-} from "@phosphor-icons/react/dist/ssr";
+import { MapPin, NavigationArrow, Star } from "@phosphor-icons/react/dist/ssr";
 
+import BackButton from "@/app/components/BackButton";
 import BusinessHoursDropdown from "@/app/components/BusinessHoursDropdown";
 import ShareButton from "@/app/components/ShareButton";
 import CafeDetailSkeleton from "@/app/components/CafeDetailSkeleton";
+import CafeGallery from "@/app/components/CafeGallery";
 import CafeLocationMap from "@/app/components/CafeLocationMap";
+import CafeStickyBar from "@/app/components/CafeStickyBar";
 import CafeTagsOverview from "@/app/components/CafeTagsOverview";
 import MenuHighlightsRow from "@/app/components/MenuHighlightsRow";
 import { getCafeById, getMenuItems } from "@/lib/data/cafes";
@@ -110,6 +107,11 @@ async function CafeDetailContent({ params }: Props) {
     (url): url is string => typeof url === "string" && url.length > 0,
   );
 
+  // The row is "Menu Highlights", not the menu — `menu_items.is_highlight`
+  // is what the cafe flagged as worth leading with. Passing the unfiltered
+  // list put all 15 of Pulso's items in a row meant for its 5.
+  const menuHighlights = menu.filter((item) => item.isHighlight);
+
   const visibleReviews = cafe.reviews.slice(0, 4);
   const featuredTags = cafe.tags
     .filter((tag) => tag.isFeatured)
@@ -117,47 +119,70 @@ async function CafeDetailContent({ params }: Props) {
 
   const distanceLabel = null;
   const operatingHours = parseOperatingHours(cafe.operatingHours);
-  const fullAddress = [cafe.address, cafe.neighborhood, cafe.city]
-    .filter((part): part is string => typeof part === "string" && part.length > 0)
-    .join(", ");
+  // `address` usually already carries the neighborhood and city ("1045 M. J.
+  // Cuenco Ave, Mabolo, Cebu City, 6000 Cebu"), so appending them unconditionally
+  // rendered "…6000 Cebu, Mabolo, Cebu City" — a repeat that costs two lines on
+  // a phone. Only add a part the address doesn't already mention.
+  const addressParts: string[] = [];
+  for (const part of [cafe.address, cafe.neighborhood, cafe.city]) {
+    if (typeof part !== "string" || part.length === 0) continue;
+    const alreadyPresent = addressParts.some((existing) =>
+      existing.toLowerCase().includes(part.toLowerCase()),
+    );
+    if (!alreadyPresent) addressParts.push(part);
+  }
+  const fullAddress = addressParts.join(", ");
   const mapsUrl = `https://www.google.com/maps/dir/?api=1&destination=${cafe.lat},${cafe.lng}`;
 
   return (
-    <main className="flex-1 pt-24 pb-16">
+    <>
+      {/* No global navbar below `lg` (see NavbarShell), so the gallery runs to
+          the top edge of the viewport. With no photos there is nothing to bleed
+          and the title needs its own breathing room instead. */}
+      <main
+        className={`flex-1 pb-[calc(6.5rem+env(safe-area-inset-bottom))] lg:pt-24 lg:pb-16 ${
+          gallery.length > 0 ? "pt-0" : "pt-6"
+        }`}
+      >
       <div className="mx-auto w-full max-w-7xl px-6 sm:px-8">
-        <section className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
-          <div>
-            <h1 className="text-2xl font-semibold text-[#2f2f2f]">
-              {cafe.name}
-            </h1>
-            <div className="mt-2 flex flex-wrap items-center gap-2 text-sm text-[#3b3b3b]">
-              <span>{cafe.rating.toFixed(1)}</span>
-              <RatingStars rating={cafe.rating} />
-              <span>({cafe.reviewCount} reviews)</span>
+        {/* Photos lead on a phone — the fastest read of whether a cafe is worth
+            the trip. On desktop the name comes first with the mosaic under it.
+            Same markup, reordered by flex rather than rendered twice. */}
+        <div className="flex flex-col gap-6">
+          <section className="order-2 flex items-start justify-between gap-4 lg:order-1">
+            <div className="min-w-0">
+              <h1 className="text-2xl font-semibold text-[#2f2f2f]">
+                {cafe.name}
+              </h1>
+              <div className="mt-2 flex flex-wrap items-center gap-2 text-sm text-[#3b3b3b]">
+                <span>{cafe.rating.toFixed(1)}</span>
+                <RatingStars rating={cafe.rating} />
+                <span>({cafe.reviewCount} reviews)</span>
+              </div>
+              <p className="mt-1 text-sm text-zinc-500">
+                {[distanceLabel, cafe.address].filter(Boolean).join(" · ")}
+              </p>
             </div>
-            <p className="mt-1 text-sm text-zinc-500">
-              {[distanceLabel, cafe.address].filter(Boolean).join(" · ")}
-            </p>
-          </div>
 
-          <div className="flex gap-2">
-            <ShareButton
-              title={cafe.name}
-              text={`${cafe.name} on Nook — cafes in Cebu`}
-            />
-            <button
-              type="button"
-              aria-label="Save cafe"
-              className="flex h-10 w-10 items-center justify-center rounded-full border border-zinc-200 bg-white text-[#3b3b3b] transition-colors hover:bg-zinc-50"
-            >
-              <Heart size={18} />
-            </button>
-          </div>
-        </section>
+            {/* Below `lg` share rides on the photo alongside the back button,
+                so this copy is desktop's. */}
+            <div className="hidden shrink-0 lg:block">
+              <ShareButton
+                title={cafe.name}
+                text={`${cafe.name} on Nook — cafes in Cebu`}
+              />
+            </div>
+          </section>
 
-        {gallery.length > 0 ? (
-          <CafeGallery cafeName={cafe.name} images={gallery} />
-        ) : null}
+          {gallery.length > 0 ? (
+            // The back button rides on the photo, so CafeGallery owns it.
+            <div className="order-1 lg:order-2">
+              <CafeGallery cafeName={cafe.name} images={gallery} />
+            </div>
+          ) : (
+            <BackButton className="order-1 lg:hidden" />
+          )}
+        </div>
 
         <div className="mt-8 grid gap-9 lg:grid-cols-[minmax(0,1fr)_410px]">
           <div className="min-w-0">
@@ -167,21 +192,25 @@ async function CafeDetailContent({ params }: Props) {
                   Menu Highlights
                 </h2>
                 {menu.length > 0 ? (
-                  <Link href={`/cafes/${id}/menu`}>
-                    <button
-                      type="button"
-                      className="shrink-0 rounded-full border border-zinc-200 px-4 py-2 text-xs font-medium text-[#3b3b3b] transition-colors hover:bg-zinc-50"
-                    >
-                      See full menu
-                    </button>
+                  <Link
+                    href={`/cafes/${id}/menu`}
+                    className="inline-flex h-11 shrink-0 items-center rounded-full border border-zinc-200 px-4 text-xs font-medium text-[#3b3b3b] transition-colors hover:bg-zinc-50"
+                  >
+                    See full menu
                   </Link>
                 ) : null}
               </div>
 
-              {menu.length > 0 ? (
+              {menuHighlights.length > 0 ? (
                 <div className="mt-4">
-                  <MenuHighlightsRow items={menu} />
+                  <MenuHighlightsRow items={menuHighlights} />
                 </div>
+              ) : menu.length > 0 ? (
+                // A menu exists but nothing is flagged. Better to say so and
+                // point at the full menu than to quietly show everything here.
+                <p className="mt-4 text-sm text-zinc-500">
+                  No highlights picked yet — see the full menu.
+                </p>
               ) : (
                 <p className="mt-4 text-sm text-zinc-500">
                   No menu items listed yet.
@@ -243,14 +272,12 @@ async function CafeDetailContent({ params }: Props) {
                   Reviews
                 </h2>
                 {cafe.reviewCount > visibleReviews.length ? (
-                  <Link href={`/cafes/${id}/reviews`}>
-                  <button
-                    type="button"
-                    className="shrink-0 rounded-full border border-zinc-200 px-4 py-2 text-xs font-medium text-[#3b3b3b] transition-colors hover:bg-zinc-50"
+                  <Link
+                    href={`/cafes/${id}/reviews`}
+                    className="inline-flex h-11 shrink-0 items-center rounded-full border border-zinc-200 px-4 text-xs font-medium text-[#3b3b3b] transition-colors hover:bg-zinc-50"
                   >
                     See all reviews
-                  </button>
-                  </Link> 
+                  </Link>
                 ) : null}
               </div>
 
@@ -266,9 +293,18 @@ async function CafeDetailContent({ params }: Props) {
                 </p>
               )}
             </section>
+
+            {/* The sidebar card is desktop-only, so opening times get their own
+                section in the flow on smaller screens rather than disappearing. */}
+            <section className="mt-10 lg:hidden">
+              <h2 className="text-lg font-semibold text-[#2f2f2f]">
+                Opening times
+              </h2>
+              <BusinessHoursDropdown hours={operatingHours} />
+            </section>
           </div>
 
-          <aside className="lg:sticky lg:top-24 lg:self-start">
+          <aside className="hidden lg:block lg:sticky lg:top-24 lg:self-start">
             <div className="rounded-xl border border-zinc-200 bg-white p-7 shadow-[0_12px_28px_rgba(0,0,0,0.08)]">
               <h2 className="text-2xl font-semibold leading-tight tracking-[-0.02em] text-[#101514]">
                 {cafe.name}
@@ -329,90 +365,14 @@ async function CafeDetailContent({ params }: Props) {
           </aside>
         </div>
       </div>
-    </main>
-  );
-}
+      </main>
 
-function CafeGallery({ cafeName, images }: { cafeName: string; images: string[] }) {
-  const total = images.length;
-  const visible = images.slice(0, 5);
-
-  const desktopGridClass =
-    total === 1
-      ? "grid-cols-1"
-      : total === 2
-        ? "grid-cols-2"
-        : "lg:grid-cols-[1.35fr_1fr]";
-
-  const mobileGridClass = total === 1 ? "grid-cols-1" : "grid-cols-2";
-
-  return (
-    <section
-      className={[
-        "mt-6 grid h-[280px] gap-2 overflow-hidden rounded-sm sm:h-[420px]",
-        mobileGridClass,
-        desktopGridClass,
-      ].join(" ")}
-    >
-      {total === 3 ? (
-        <>
-          <GalleryTile src={images[0]} alt={cafeName} priority sizes="(min-width: 1024px) 60vw, 100vw" />
-          <div className="grid h-full grid-rows-2 gap-2">
-            <GalleryTile src={images[1]} alt={`${cafeName} gallery 2`} sizes="(min-width: 1024px) 40vw, 50vw" />
-            <GalleryTile src={images[2]} alt={`${cafeName} gallery 3`} sizes="(min-width: 1024px) 40vw, 50vw" />
-          </div>
-        </>
-      ) : total >= 4 ? (
-        <>
-          <GalleryTile src={images[0]} alt={cafeName} priority sizes="(min-width: 1024px) 60vw, 100vw" />
-          <div className="grid h-full gap-2 grid-cols-2 grid-rows-2">
-            {visible.slice(1).map((image, index) => (
-              <GalleryTile
-                key={image}
-                src={image}
-                alt={`${cafeName} gallery ${index + 2}`}
-                sizes="(min-width: 1024px) 25vw, 50vw"
-              />
-            ))}
-          </div>
-        </>
-      ) : (
-        visible.map((image, index) => (
-          <GalleryTile
-            key={image}
-            src={image}
-            alt={index === 0 ? cafeName : `${cafeName} gallery ${index + 1}`}
-            priority={index === 0}
-            sizes={index === 0 ? "100vw" : "50vw"}
-          />
-        ))
-      )}
-    </section>
-  );
-}
-
-function GalleryTile({
-  src,
-  alt,
-  priority,
-  sizes,
-}: {
-  src: string;
-  alt: string;
-  priority?: boolean;
-  sizes: string;
-}) {
-  return (
-    <div className="relative h-full w-full bg-zinc-100">
-      <Image
-        src={src}
-        alt={alt}
-        fill
-        priority={priority}
-        sizes={sizes}
-        className="object-cover"
+      <CafeStickyBar
+        cafeName={cafe.name}
+        hours={operatingHours}
+        mapsUrl={mapsUrl}
       />
-    </div>
+    </>
   );
 }
 

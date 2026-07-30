@@ -3,11 +3,15 @@
 import { useEffect, useRef, useState } from "react";
 import { Check, ShareNetwork } from "@phosphor-icons/react";
 
+import { cn } from "@/lib/utils";
+
 type Props = {
   /** Share-sheet headline, e.g. the cafe name. */
   title: string;
   /** One-line context under the headline in native share sheets. */
   text?: string;
+  /** Extra classes for the button itself — used by the over-photo variant. */
+  className?: string;
 };
 
 type Feedback = "copied" | "failed" | null;
@@ -18,7 +22,7 @@ type Feedback = "copied" | "failed" | null;
  * button that silently does nothing reads as broken, which is exactly what
  * this replaced.
  */
-export default function ShareButton({ title, text }: Props) {
+export default function ShareButton({ title, text, className }: Props) {
   const [feedback, setFeedback] = useState<Feedback>(null);
   const resetTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -68,7 +72,10 @@ export default function ShareButton({ title, text }: Props) {
         type="button"
         aria-label="Share cafe"
         onClick={share}
-        className="flex h-10 w-10 items-center justify-center rounded-full border border-zinc-200 bg-white text-[#3b3b3b] transition-colors hover:bg-zinc-50"
+        className={cn(
+          "flex h-11 w-11 items-center justify-center rounded-full border border-zinc-200 bg-white text-[#3b3b3b] transition-colors hover:bg-zinc-50",
+          className,
+        )}
       >
         {feedback === "copied" ? (
           <Check size={18} className="text-[#3A5A40]" />

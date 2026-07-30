@@ -21,6 +21,10 @@ export default function NavbarShell({
   // The menu page is a drill-down off a cafe, so the navbar carries the way
   // back to it instead of the page rendering its own control.
   const menuBackHref = pathname.match(/^\/cafes\/([^/]+)\/menu$/)?.[1];
+  // The cafe detail page runs its own chrome below `lg` — a back button over
+  // the photo and a sticky action bar — so the global navbar would only be
+  // taking 80px off a phone screen. It still renders at `lg` and above.
+  const isCafeDetail = /^\/cafes\/[^/]+$/.test(pathname);
   const [scrolled, setScrolled] = useState(false);
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
@@ -65,6 +69,7 @@ export default function NavbarShell({
     <header
       className={[
         "fixed inset-x-0 top-0 z-50 transition-all duration-300 ease-out",
+        isCafeDetail ? "hidden lg:block" : "",
         scrolled || isMapPage
           ? "bg-white/95 backdrop-blur border-b border-zinc-200"
           : "bg-transparent border-b border-transparent",
@@ -103,10 +108,14 @@ export default function NavbarShell({
           <div className="flex-1" />
         )}
 
-        <div className="flex shrink-0 items-center gap-4 sm:gap-6">
+        <div className="flex shrink-0 items-center gap-3 sm:gap-6">
+          {/* Logo + pill + menu button measured 371px wide regardless of
+              viewport (both ends are shrink-0), so below `sm` the pill silently
+              clipped off-screen — and because the header is fixed, no scrollbar
+              appeared to reach it. It moves into the menu instead. */}
           <Link
             href="https://business.nookph.app/"
-            className="rounded-full border border-zinc-300 bg-transparent px-4 py-2 text-sm font-medium text-zinc-800 transition-colors hover:bg-zinc-50"
+            className="hidden h-11 items-center rounded-full border border-zinc-300 bg-transparent px-4 text-sm font-medium text-zinc-800 transition-colors hover:bg-zinc-50 sm:inline-flex"
           >
             Claim your Cafe
           </Link>
@@ -118,7 +127,7 @@ export default function NavbarShell({
               aria-expanded={isMenuOpen}
               aria-haspopup="menu"
               onClick={() => setIsMenuOpen((o) => !o)}
-              className="flex h-10 w-10 items-center justify-center rounded-full border border-zinc-300 transition-colors hover:bg-zinc-50"
+              className="flex h-11 w-11 items-center justify-center rounded-full border border-zinc-300 transition-colors hover:bg-zinc-50"
             >
               <svg
                 width="18"
@@ -163,6 +172,10 @@ export default function NavbarShell({
                 role="menu"
                 className="absolute right-0 top-full mt-2 w-64 rounded-xl bg-white shadow-lg ring-1 ring-zinc-200/70 overflow-hidden"
               >
+                {/* No "Log in or sign up" entry while accounts are shelved.
+                    The signed-in block stays so anyone holding a live session
+                    can still sign out — `/login` and `/signup` are untouched,
+                    just unreachable from the UI. */}
                 {userEmail ? (
                   <>
                     <div className="border-b border-zinc-100 px-4 py-2.5">
@@ -183,21 +196,20 @@ export default function NavbarShell({
                       </button>
                     </form>
                   </>
-                ) : (
-                  <Link
-                    href="/login"
-                    role="menuitem"
-                    onClick={() => setIsMenuOpen(false)}
-                    className="block px-4 py-2.5 text-sm text-zinc-800 transition-colors hover:bg-zinc-50"
-                  >
-                    Log in or sign up
-                  </Link>
-                )}
+                ) : null}
+                <Link
+                  href="https://business.nookph.app/"
+                  role="menuitem"
+                  onClick={() => setIsMenuOpen(false)}
+                  className="block border-t border-zinc-100 px-4 py-3 text-sm text-zinc-800 transition-colors hover:bg-zinc-50 sm:hidden"
+                >
+                  Claim your Cafe
+                </Link>
                 <Link
                   href="/download-app"
                   role="menuitem"
                   onClick={() => setIsMenuOpen(false)}
-                  className="block border-t border-zinc-100 px-4 py-2.5 text-sm text-zinc-800 transition-colors hover:bg-zinc-50"
+                  className="block border-t border-zinc-100 px-4 py-3 text-sm text-zinc-800 transition-colors hover:bg-zinc-50"
                 >
                   Download the app
                 </Link>

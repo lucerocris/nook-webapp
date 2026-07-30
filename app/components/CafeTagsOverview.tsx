@@ -63,7 +63,7 @@ export default function CafeTagsOverview({
         <button
           type="button"
           onClick={() => setIsOpen(true)}
-          className="mt-5 text-sm font-medium text-[#31533f] underline underline-offset-4 transition-colors hover:text-[#243f30]"
+          className="mt-2 inline-flex min-h-11 items-center text-sm font-medium text-[#31533f] underline underline-offset-4 transition-colors hover:text-[#243f30]"
         >
           See more
         </button>
@@ -76,11 +76,14 @@ export default function CafeTagsOverview({
             if (event.target === event.currentTarget) setIsOpen(false);
           }}
         >
+          {/* `vh` on mobile resolves against the *largest* viewport, so with the
+              browser chrome expanded the sheet ran underneath it. `dvh` tracks
+              the visible area; the footer padding clears the home indicator. */}
           <div
             role="dialog"
             aria-modal="true"
             aria-labelledby={titleId}
-            className="max-h-[85vh] w-full overflow-hidden rounded-t-2xl bg-white shadow-2xl sm:max-w-lg sm:rounded-2xl"
+            className="max-h-[85dvh] w-full overflow-hidden rounded-t-2xl bg-white shadow-2xl sm:max-w-lg sm:rounded-2xl"
           >
             <div className="flex items-center justify-between border-b border-zinc-100 px-6 py-5">
               <h2
@@ -94,13 +97,13 @@ export default function CafeTagsOverview({
                 type="button"
                 onClick={() => setIsOpen(false)}
                 aria-label="Close cafe details"
-                className="flex h-9 w-9 items-center justify-center rounded-full text-zinc-500 transition-colors hover:bg-zinc-100 hover:text-zinc-800"
+                className="flex h-11 w-11 items-center justify-center rounded-full text-zinc-500 transition-colors hover:bg-zinc-100 hover:text-zinc-800"
               >
                 <X size={20} />
               </button>
             </div>
 
-            <div className="max-h-[calc(85vh-80px)] overflow-y-auto px-6 py-5">
+            <div className="max-h-[calc(85dvh-80px)] overflow-y-auto px-6 pt-5 pb-[calc(1.25rem+env(safe-area-inset-bottom))]">
               <div className="grid gap-8">
                 {groups.map((group) => (
                   <TagColumn
