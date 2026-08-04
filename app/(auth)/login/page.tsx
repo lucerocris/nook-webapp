@@ -1,10 +1,31 @@
 "use client";
 
 import Link from "next/link";
-import { useActionState } from "react";
+import { Suspense, useActionState } from "react";
+import { useSearchParams } from "next/navigation";
 import { signIn, type AuthState } from "../actions";
 
+/** useSearchParams needs a Suspense boundary above it to prerender, so the
+ * form sits inside one rather than the page reading the param directly. */
 export default function LoginPage() {
+  return (
+    <Suspense fallback={<LoginForm />}>
+      <LoginFormWithNotice />
+    </Suspense>
+  );
+}
+
+function LoginFormWithNotice() {
+  const failedConfirmation =
+    useSearchParams().get("error") === "confirmation_failed";
+  return <LoginForm failedConfirmation={failedConfirmation} />;
+}
+
+function LoginForm({
+  failedConfirmation = false,
+}: {
+  failedConfirmation?: boolean;
+}) {
   const [state, formAction, pending] = useActionState<AuthState, FormData>(
     signIn,
     undefined,
@@ -18,6 +39,19 @@ export default function LoginPage() {
       <p className="mt-1 text-sm text-zinc-500">
         Sign in to save cafes and pick up where you left off.
       </p>
+
+      {/* The confirmation link expired or had already been used. The code in
+          the same email is the other way in, so point back at sign-up rather
+          than leaving a dead end. */}
+      {failedConfirmation && !state?.error && (
+        <p className="mt-4 rounded-md bg-amber-50 px-3 py-2 text-xs text-amber-800">
+          That confirmation link is no longer valid. Sign in below, or{" "}
+          <Link href="/signup" className="font-medium underline">
+            start sign-up again
+          </Link>{" "}
+          to get a new code.
+        </p>
+      )}
 
       <form action={formAction} className="mt-6 space-y-4">
         <label className="block">
