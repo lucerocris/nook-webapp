@@ -1,4 +1,11 @@
 import Link from "next/link";
+import type { Metadata } from "next";
+
+// Disallowed in robots.txt too, but a disallowed URL can still be indexed from
+// external links; noindex is what keeps it out once a crawler does fetch it.
+export const metadata: Metadata = {
+  robots: { index: false, follow: true },
+};
 
 export default function AuthLayout({
   children,

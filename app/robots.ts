@@ -7,8 +7,9 @@ export default function robots(): MetadataRoute.Robots {
     rules: {
       userAgent: "*",
       allow: "/",
-      // Auth pages and the JSON endpoints carry no indexable content.
-      disallow: ["/api/", "/login", "/signup"],
+      // Auth pages, the email-confirmation handler and the JSON endpoints
+      // carry no indexable content.
+      disallow: ["/api/", "/auth/", "/login", "/signup"],
     },
     sitemap: `${siteUrl}/sitemap.xml`,
   };

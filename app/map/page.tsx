@@ -1,7 +1,25 @@
 import { Suspense } from "react";
+import type { Metadata } from "next";
 
 import MapExplorer from "@/app/components/MapExplorer";
 import { searchCafes } from "@/lib/data/search";
+import { BASE_OPEN_GRAPH } from "@/lib/seo/metadata";
+
+// Filtered views (?q=, ?tag=) are the same page with different pins; they all
+// canonicalize to the bare /map.
+export const metadata: Metadata = {
+  title: "Cafe map",
+  description:
+    "Every cafe on Nook on one map. Filter by Wi-Fi, outlets, and vibe to find a spot near you.",
+  alternates: { canonical: "/map" },
+  openGraph: {
+    ...BASE_OPEN_GRAPH,
+    url: "/map",
+    title: "Cafe map · Nook",
+    description:
+      "Every cafe on Nook on one map. Filter by Wi-Fi, outlets, and vibe.",
+  },
+};
 
 type Props = {
   searchParams: Promise<{ q?: string; tag?: string; tags?: string }>;

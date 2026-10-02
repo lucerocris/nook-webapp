@@ -17,6 +17,8 @@ import { getCafeById, getMenuItems } from "@/lib/data/cafes";
 import type { Review } from "@/lib/data/cafes-mappers";
 import { getTagIcon } from "@/lib/utils/tag-icon";
 import { parseOperatingHours } from "@/lib/utils/hours";
+import JsonLd from "@/app/components/JsonLd";
+import { cafeJsonLd } from "@/lib/seo/cafe-json-ld";
 
 type Props = {
   params: Promise<{ id: string }>;
@@ -136,6 +138,7 @@ async function CafeDetailContent({ params }: Props) {
 
   return (
     <>
+      <JsonLd data={cafeJsonLd(cafe, operatingHours)} />
       {/* No global navbar below `lg` (see NavbarShell), so the gallery runs to
           the top edge of the viewport. With no photos there is nothing to bleed
           and the title needs its own breathing room instead. */}

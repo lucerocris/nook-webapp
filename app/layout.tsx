@@ -4,6 +4,7 @@ import { Suspense } from "react";
 import "./globals.css";
 import Navbar from "./components/Navbar";
 import { SITE_URL } from "@/lib/env";
+import { BASE_OPEN_GRAPH, SITE_TITLE } from "@/lib/seo/metadata";
 
 const poppins = Poppins({
   variable: "--font-poppins",
@@ -20,7 +21,7 @@ export const siteUrl = SITE_URL;
 export const metadata: Metadata = {
   metadataBase: new URL(siteUrl),
   title: {
-    default: "Nook — Philippine cafes, community curated",
+    default: SITE_TITLE,
     template: "%s · Nook",
   },
   description:
@@ -35,18 +36,14 @@ export const metadata: Metadata = {
     shortcut: "/nookGlasses.svg",
     apple: "/nookGlasses.svg",
   },
-  alternates: { canonical: "/" },
-  openGraph: {
-    type: "website",
-    siteName: "Nook",
-    url: "/",
-    title: "Nook — Philippine cafes, community curated",
-    description:
-      "Find the perfect spot to work, study, or chill. Filter cafes by Wi-Fi, outlets, and vibe.",
-  },
+  // No `alternates.canonical` or `openGraph.url` here: both are inherited by
+  // every route that doesn't override them, which made /map (and anything else
+  // without its own metadata) declare the homepage as its canonical. Each page
+  // states its own.
+  openGraph: BASE_OPEN_GRAPH,
   twitter: {
     card: "summary_large_image",
-    title: "Nook — Philippine cafes, community curated",
+    title: SITE_TITLE,
     description:
       "Find the perfect spot to work, study, or chill. Filter cafes by Wi-Fi, outlets, and vibe.",
   },

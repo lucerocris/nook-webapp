@@ -1,4 +1,5 @@
 import { Suspense } from "react";
+import type { Metadata } from "next";
 
 import CafeRow from "./components/CafeRow";
 import CafeRowSkeleton from "./components/CafeRowSkeleton";
@@ -7,6 +8,36 @@ import Hero from "./components/Hero";
 import NearbyOptIn from "./components/NearbyOptIn";
 import { getHomeFeed } from "@/lib/data/cafes";
 import { getCurrentUserId } from "@/lib/data/auth";
+import JsonLd from "./components/JsonLd";
+import { SITE_URL } from "@/lib/env";
+import { BASE_OPEN_GRAPH, SITE_DESCRIPTION } from "@/lib/seo/metadata";
+
+export const metadata: Metadata = {
+  alternates: { canonical: "/" },
+  openGraph: { ...BASE_OPEN_GRAPH, url: "/" },
+};
+
+const siteJsonLd = {
+  "@context": "https://schema.org",
+  "@graph": [
+    {
+      "@type": "WebSite",
+      "@id": `${SITE_URL}/#website`,
+      url: `${SITE_URL}/`,
+      name: "Nook",
+      description: SITE_DESCRIPTION,
+      publisher: { "@id": `${SITE_URL}/#organization` },
+      inLanguage: "en",
+    },
+    {
+      "@type": "Organization",
+      "@id": `${SITE_URL}/#organization`,
+      name: "Nook",
+      url: `${SITE_URL}/`,
+      logo: `${SITE_URL}/logo.svg`,
+    },
+  ],
+};
 
 type Props = {
   searchParams: Promise<{ lat?: string; lng?: string }>;
@@ -31,6 +62,7 @@ function parseCoord(value: string | undefined): number | undefined {
 export default function Home({ searchParams }: Props) {
   return (
     <>
+      <JsonLd data={siteJsonLd} />
       <main className="flex-1">
         <Hero />
         <Suspense fallback={null}>

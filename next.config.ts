@@ -33,8 +33,66 @@ const securityHeaders = [
   },
 ];
 
+// Crawlers that get blocking metadata: <title>, description, canonical and OG
+// tags in the initial <head> instead of streamed in after the page shell.
+// Next's default list (social previews, Bing, Yandex, …) deliberately leaves
+// out Googlebot — it renders JS, so it gets streamed metadata — and has no AI
+// crawlers at all. Every cafe page streams its body behind Suspense, so for
+// those bots the first HTML had no title or canonical. Overriding the option
+// replaces the default list, so the default entries are repeated here.
+const htmlLimitedBots = new RegExp(
+  [
+    // Next's defaults (next/dist/shared/lib/router/utils/html-bots).
+    "[\\w-]+-Google",
+    "Google-[\\w-]+",
+    "Chrome-Lighthouse",
+    "Slurp",
+    "DuckDuckBot",
+    "baiduspider",
+    "yandex",
+    "sogou",
+    "bitlybot",
+    "tumblr",
+    "vkShare",
+    "quora link preview",
+    "redditbot",
+    "ia_archiver",
+    "Bingbot",
+    "BingPreview",
+    "applebot",
+    "facebookexternalhit",
+    "facebookcatalog",
+    "Twitterbot",
+    "LinkedInBot",
+    "Slackbot",
+    "Discordbot",
+    "WhatsApp",
+    "SkypeUriPreview",
+    "Yeti",
+    "googleweblight",
+    // Added: Google's main crawler, and AI search/answer crawlers.
+    "Googlebot",
+    "GPTBot",
+    "OAI-SearchBot",
+    "ChatGPT-User",
+    "ClaudeBot",
+    "Claude-User",
+    "Claude-SearchBot",
+    "PerplexityBot",
+    "Perplexity-User",
+    "CCBot",
+    "Amazonbot",
+    "Bytespider",
+    "meta-externalagent",
+    "MistralAI-User",
+    "cohere-ai",
+  ].join("|"),
+  "i",
+);
+
 const nextConfig: NextConfig = {
   cacheComponents: true,
+  htmlLimitedBots,
   images: {
     remotePatterns,
   },
