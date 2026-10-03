@@ -2,21 +2,23 @@ import { Suspense } from "react";
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { MapPin, NavigationArrow, Star } from "@phosphor-icons/react/dist/ssr";
 
 import BackButton from "@/app/components/BackButton";
-import BusinessHoursDropdown from "@/app/components/BusinessHoursDropdown";
 import ShareButton from "@/app/components/ShareButton";
 import CafeDetailSkeleton from "@/app/components/CafeDetailSkeleton";
 import CafeGallery from "@/app/components/CafeGallery";
-import CafeLocationMap from "@/app/components/CafeLocationMap";
 import CafeStickyBar from "@/app/components/CafeStickyBar";
-import CafeTagsOverview from "@/app/components/CafeTagsOverview";
+import CafeAmenities from "@/app/components/cafe/CafeAmenities";
+import CafeHeading from "@/app/components/cafe/CafeHeading";
+import CafeInfoPanel from "@/app/components/cafe/CafeInfoPanel";
+import CafeLocation from "@/app/components/cafe/CafeLocation";
+import CafeReviews from "@/app/components/cafe/CafeReviews";
+import SectionTabs from "@/app/components/cafe/SectionTabs";
+import Footer from "@/app/components/Footer";
 import MenuHighlightsRow from "@/app/components/MenuHighlightsRow";
 import { getCafeById, getMenuItems } from "@/lib/data/cafes";
-import type { Review } from "@/lib/data/cafes-mappers";
-import { getTagIcon } from "@/lib/utils/tag-icon";
 import { parseOperatingHours } from "@/lib/utils/hours";
+import { parseSocialLinks } from "@/lib/utils/social";
 import JsonLd from "@/app/components/JsonLd";
 import { cafeJsonLd } from "@/lib/seo/cafe-json-ld";
 
@@ -114,12 +116,6 @@ async function CafeDetailContent({ params }: Props) {
   // list put all 15 of Pulso's items in a row meant for its 5.
   const menuHighlights = menu.filter((item) => item.isHighlight);
 
-  const visibleReviews = cafe.reviews.slice(0, 4);
-  const featuredTags = cafe.tags
-    .filter((tag) => tag.isFeatured)
-    .slice(0, 2);
-
-  const distanceLabel = null;
   const operatingHours = parseOperatingHours(cafe.operatingHours);
   // `address` usually already carries the neighborhood and city ("1045 M. J.
   // Cuenco Ave, Mabolo, Cebu City, 6000 Cebu"), so appending them unconditionally
@@ -133,242 +129,159 @@ async function CafeDetailContent({ params }: Props) {
     );
     if (!alreadyPresent) addressParts.push(part);
   }
-  const fullAddress = addressParts.join(", ");
+  const fullAddress = addressParts.join(", ") || cafe.address;
+  const area = [cafe.neighborhood, cafe.city].filter(Boolean).join(", ");
   const mapsUrl = `https://www.google.com/maps/dir/?api=1&destination=${cafe.lat},${cafe.lng}`;
+  const links = parseSocialLinks(cafe.socialLinks);
+  const tabs = [
+    { id: "overview", label: "Overview" },
+    { id: "offers", label: "What it offers" },
+    { id: "menu", label: "Menu" },
+    { id: "hours", label: "Hours & location" },
+    { id: "reviews", label: "Reviews" },
+  ];
 
   return (
     <>
       <JsonLd data={cafeJsonLd(cafe, operatingHours)} />
       {/* No global navbar below `lg` (see NavbarShell), so the gallery runs to
-          the top edge of the viewport. With no photos there is nothing to bleed
-          and the title needs its own breathing room instead. */}
+          the top edge of the viewport. With no photos the title needs its own
+          breathing room instead. */}
       <main
-        className={`flex-1 pb-[calc(6.5rem+env(safe-area-inset-bottom))] lg:pt-24 lg:pb-16 ${
+        className={`flex-1 pb-[calc(6.5rem+env(safe-area-inset-bottom))] lg:pt-24 lg:pb-0 ${
           gallery.length > 0 ? "pt-0" : "pt-6"
         }`}
       >
-      <div className="mx-auto w-full max-w-7xl px-6 sm:px-8">
-        {/* Photos lead on a phone — the fastest read of whether a cafe is worth
-            the trip. On desktop the name comes first with the mosaic under it.
-            Same markup, reordered by flex rather than rendered twice. */}
-        <div className="flex flex-col gap-6">
-          <section className="order-2 flex items-start justify-between gap-4 lg:order-1">
-            <div className="min-w-0">
-              <h1 className="text-2xl font-semibold text-[#2f2f2f]">
-                {cafe.name}
-              </h1>
-              <div className="mt-2 flex flex-wrap items-center gap-2 text-sm text-[#3b3b3b]">
-                <span>{cafe.rating.toFixed(1)}</span>
-                <RatingStars rating={cafe.rating} />
-                <span>({cafe.reviewCount} reviews)</span>
+        <div className="mx-auto w-full max-w-7xl px-4 sm:px-8">
+          {/* Photos lead on a phone; on desktop the title row comes first with
+              the mosaic under it. Same markup, reordered by flex. */}
+          <div className="flex flex-col gap-5 lg:gap-6">
+            <header className="order-2 flex items-end justify-between gap-4 lg:order-1">
+              <div className="min-w-0">
+                <h1 className="text-[1.75rem] font-semibold leading-tight tracking-[-0.02em] text-ink sm:text-[2rem]">
+                  {cafe.name}
+                </h1>
               </div>
-              <p className="mt-1 text-sm text-zinc-500">
-                {[distanceLabel, cafe.address].filter(Boolean).join(" · ")}
-              </p>
-            </div>
-
-            {/* Below `lg` share rides on the photo alongside the back button,
-                so this copy is desktop's. */}
-            <div className="hidden shrink-0 lg:block">
-              <ShareButton
-                title={cafe.name}
-                text={`${cafe.name} on Nook — cafes in Cebu`}
-              />
-            </div>
-          </section>
-
-          {gallery.length > 0 ? (
-            // The back button rides on the photo, so CafeGallery owns it.
-            <div className="order-1 lg:order-2">
-              <CafeGallery cafeName={cafe.name} images={gallery} />
-            </div>
-          ) : (
-            <BackButton className="order-1 lg:hidden" />
-          )}
-        </div>
-
-        <div className="mt-8 grid gap-9 lg:grid-cols-[minmax(0,1fr)_410px]">
-          <div className="min-w-0">
-            <section>
-              <div className="flex items-center justify-between gap-4">
-                <h2 className="text-lg font-semibold text-[#101514]">
-                  Menu Highlights
-                </h2>
-                {menu.length > 0 ? (
-                  <Link
-                    href={`/cafes/${id}/menu`}
-                    className="inline-flex h-11 shrink-0 items-center rounded-full border border-zinc-200 px-4 text-xs font-medium text-[#3b3b3b] transition-colors hover:bg-zinc-50"
-                  >
-                    See full menu
-                  </Link>
-                ) : null}
+              {/* Below `lg` share rides on the photo alongside the back button. */}
+              <div className="hidden shrink-0 lg:block">
+                <ShareButton
+                  title={cafe.name}
+                  text={`${cafe.name} on Nook — cafes in Cebu`}
+                  label="Share"
+                />
               </div>
+            </header>
 
-              {menuHighlights.length > 0 ? (
-                <div className="mt-4">
-                  <MenuHighlightsRow items={menuHighlights} />
-                </div>
-              ) : menu.length > 0 ? (
-                // A menu exists but nothing is flagged. Better to say so and
-                // point at the full menu than to quietly show everything here.
-                <p className="mt-4 text-sm text-zinc-500">
-                  No highlights picked yet — see the full menu.
-                </p>
-              ) : (
-                <p className="mt-4 text-sm text-zinc-500">
-                  No menu items listed yet.
-                </p>
-              )}
-            </section>
-
-            <section className="mt-8">
-              <h2 className="text-lg font-semibold text-[#101514]">About</h2>
-              {cafe.description ? (
-                <p className="mt-4 max-w-4xl text-sm leading-6 text-[#101514]">
-                  {cafe.description}
-                </p>
-              ) : (
-                <p className="mt-4 text-sm text-zinc-500">
-                  No description provided yet.
-                </p>
-              )}
-
-              <CafeTagsOverview
-                amenities={cafe.tags.filter(
-                  (tag) => tag.category === "amenities",
-                )}
-                bestFor={cafe.tags.filter(
-                  (tag) => tag.category === "best_for",
-                )}
-                payment={cafe.tags.filter(
-                  (tag) => tag.category === "payment",
-                )}
-              />
-            </section>
-
-            <section className="mt-10">
-              <h2 className="text-lg font-semibold text-[#2f2f2f]">Location</h2>
-              <div className="mt-4 flex flex-col gap-4 sm:flex-row sm:items-center">
-                <div className="h-48 w-full overflow-hidden rounded-xl bg-zinc-100 sm:w-80">
-                  <CafeLocationMap
-                    name={cafe.name}
-                    address={fullAddress || cafe.address}
-                    lat={cafe.lat}
-                    lng={cafe.lng}
-                  />
-                </div>
-                <a
-                  href={mapsUrl}
-                  target="_blank"
-                  rel="noreferrer"
-                  className="flex items-center gap-2 text-sm text-[#3b3b3b] underline-offset-2 transition-colors hover:text-[#31533f] hover:underline"
-                >
-                  <MapPin size={16} className="shrink-0 text-[#3A5A40]" />
-                  {fullAddress || cafe.address}
-                </a>
+            {gallery.length > 0 ? (
+              <div className="order-1 lg:order-2">
+                <CafeGallery cafeName={cafe.name} images={gallery} />
               </div>
-            </section>
-
-            <section className="mt-10">
-              <div className="flex items-center justify-between gap-4">
-                <h2 className="text-lg font-semibold text-[#2f2f2f]">
-                  Reviews
-                </h2>
-                {cafe.reviewCount > visibleReviews.length ? (
-                  <Link
-                    href={`/cafes/${id}/reviews`}
-                    className="inline-flex h-11 shrink-0 items-center rounded-full border border-zinc-200 px-4 text-xs font-medium text-[#3b3b3b] transition-colors hover:bg-zinc-50"
-                  >
-                    See all reviews
-                  </Link>
-                ) : null}
-              </div>
-
-              {visibleReviews.length > 0 ? (
-                <div className="mt-4 grid gap-4 sm:grid-cols-2">
-                  {visibleReviews.map((review) => (
-                    <ReviewCard key={review.id} review={review} />
-                  ))}
-                </div>
-              ) : (
-                <p className="mt-4 text-sm text-zinc-500">
-                  No reviews yet. Be the first to share your experience.
-                </p>
-              )}
-            </section>
-
-            {/* The sidebar card is desktop-only, so opening times get their own
-                section in the flow on smaller screens rather than disappearing. */}
-            <section className="mt-10 lg:hidden">
-              <h2 className="text-lg font-semibold text-[#2f2f2f]">
-                Opening times
-              </h2>
-              <BusinessHoursDropdown hours={operatingHours} />
-            </section>
+            ) : (
+              <BackButton className="order-1 lg:hidden" />
+            )}
           </div>
 
-          <aside className="hidden lg:block lg:sticky lg:top-24 lg:self-start">
-            <div className="rounded-xl border border-zinc-200 bg-white p-7 shadow-[0_12px_28px_rgba(0,0,0,0.08)]">
-              <h2 className="text-2xl font-semibold leading-tight tracking-[-0.02em] text-[#101514]">
-                {cafe.name}
-              </h2>
+          <SectionTabs tabs={tabs} />
 
-              <div className="mt-2 flex flex-wrap items-center gap-1.5 text-xs leading-none text-[#101514]">
-                <span>{cafe.rating.toFixed(1)}</span>
-                <RatingStars rating={cafe.rating} size={12} />
-                <span className="text-[#6b6b6b]">
-                  ({cafe.reviewCount} reviews)
-                </span>
-              </div>
+          <div className="mt-8 grid gap-10 lg:mt-10 lg:grid-cols-[minmax(0,1fr)_360px] lg:gap-16">
+            <div className="min-w-0 divide-y divide-line [&>section]:scroll-mt-32 [&>section]:py-10 [&>section:first-child]:pt-0">
+              <section id="overview">
+                <h2 className="sr-only">Overview</h2>
+                <CafeHeading
+                  area={area}
+                  rating={cafe.rating}
+                  reviewCount={cafe.reviewCount}
+                  tags={cafe.tags}
+                  description={cafe.description}
+                />
+              </section>
 
-              <p className="mt-3 text-xs leading-none text-[#6b6b6b]">
-                {[distanceLabel, cafe.address].filter(Boolean).join(" • ")}
-              </p>
+              <section id="offers">
+                <SectionTitle>What this cafe offers</SectionTitle>
+                <div className="mt-6">
+                  <CafeAmenities
+                    amenities={cafe.tags.filter((tag) => tag.category === "amenities")}
+                    bestFor={cafe.tags.filter((tag) => tag.category === "best_for")}
+                    payment={cafe.tags.filter((tag) => tag.category === "payment")}
+                  />
+                </div>
+              </section>
 
-              <div className="mt-5 flex flex-wrap gap-2">
-                {featuredTags.map((tag) => {
-                  const Icon = getTagIcon(tag.name);
-                  return (
-                    <span
-                      key={tag.id}
-                      className="inline-flex h-7 items-center gap-2 rounded-full border border-[#8a8d8a] px-3 text-xs font-medium text-[#6b6b6b]"
+              <section id="menu">
+                {menuHighlights.length > 0 ? (
+                  <>
+                    <MenuHighlightsRow
+                      items={menuHighlights}
+                      header={
+                        <>
+                          <SectionTitle>Menu</SectionTitle>
+                          <p className="mt-1 text-sm text-muted">The cafe&apos;s own picks</p>
+                        </>
+                      }
+                      actions={<FullMenuLink id={id} />}
+                    />
+                    <Link
+                      href={`/cafes/${id}/menu`}
+                      className="mt-7 inline-flex h-11 items-center rounded-full border border-ink px-5 text-sm font-semibold text-ink transition-colors hover:bg-paper focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand"
                     >
-                      <Icon size={14} className="text-[#6b6b6b]" />
-                      {tag.name}
-                    </span>
-                  );
-                })}
-              </div>
+                      See the full menu{menu.length > 0 ? ` (${menu.length} items)` : ""}
+                    </Link>
+                  </>
+                ) : (
+                  <>
+                    <div className="flex items-end justify-between gap-4">
+                      <SectionTitle>Menu</SectionTitle>
+                      {menu.length > 0 ? <FullMenuLink id={id} /> : null}
+                    </div>
+                    <p className="mt-3 text-sm text-muted">
+                      {menu.length > 0
+                        ? `No picks yet. The full menu has ${menu.length} ${menu.length === 1 ? "item" : "items"}.`
+                        : "No menu listed yet."}
+                    </p>
+                  </>
+                )}
+              </section>
 
-              <BusinessHoursDropdown hours={operatingHours} />
+              <section id="hours">
+                <SectionTitle>Hours &amp; location</SectionTitle>
+                <div className="mt-6">
+                  <CafeLocation
+                    name={cafe.name}
+                    address={fullAddress}
+                    lat={cafe.lat}
+                    lng={cafe.lng}
+                    hours={operatingHours}
+                    mapsUrl={mapsUrl}
+                  />
+                </div>
+              </section>
 
-              <a
-                href={mapsUrl}
-                target="_blank"
-                rel="noreferrer"
-                aria-label={`Open ${cafe.name} in Google Maps`}
-                className="mt-6 flex items-start gap-4 text-xs leading-snug text-[#353535] underline-offset-2 transition-colors hover:text-[#31533f] hover:underline"
-              >
-                <MapPin size={17} className="mt-0.5 shrink-0 text-[#31533f]" />
-                <span className="block min-w-0 break-words">
-                  {fullAddress || cafe.address}
-                </span>
-              </a>
-
-              <a
-                href={mapsUrl}
-                target="_blank"
-                rel="noreferrer"
-                className="mt-6 flex h-10 w-full items-center justify-center gap-3 rounded-md bg-[#31533f] px-4 text-sm font-semibold text-white transition-colors hover:bg-[#294635]"
-              >
-                <NavigationArrow size={18} />
-                Get Directions
-              </a>
+              <section id="reviews">
+                <CafeReviews
+                  cafeId={id}
+                  rating={cafe.rating}
+                  reviewCount={cafe.reviewCount}
+                  reviews={cafe.reviews}
+                />
+              </section>
             </div>
-          </aside>
+
+            <aside className="hidden lg:block lg:sticky lg:top-32 lg:self-start">
+              <CafeInfoPanel
+                name={cafe.name}
+                hours={operatingHours}
+                address={fullAddress}
+                mapsUrl={mapsUrl}
+                links={links}
+              />
+            </aside>
+          </div>
         </div>
-      </div>
       </main>
+
+      <div className="hidden lg:block">
+        <Footer />
+      </div>
 
       <CafeStickyBar
         cafeName={cafe.name}
@@ -379,44 +292,19 @@ async function CafeDetailContent({ params }: Props) {
   );
 }
 
-function RatingStars({ rating = 5, size = 13 }: { rating?: number; size?: number }) {
+function SectionTitle({ children }: { children: React.ReactNode }) {
   return (
-    <span className="flex items-center gap-0.5">
-      {Array.from({ length: 5 }).map((_, index) => (
-        <Star
-          key={index}
-          size={size}
-          weight={index < Math.round(rating) ? "fill" : "regular"}
-          className="text-[#3A5A40]"
-        />
-      ))}
-    </span>
+    <h2 className="text-xl font-semibold tracking-[-0.02em] text-ink">{children}</h2>
   );
 }
 
-function ReviewCard({ review }: { review: Review }) {
+function FullMenuLink({ id }: { id: string }) {
   return (
-    <article className="rounded-xl border border-zinc-200 p-4">
-      <div className="flex items-start justify-between gap-4">
-        <div>
-          <p className="text-sm font-semibold text-[#2f2f2f]">
-            {review.authorName}
-          </p>
-          <p className="text-xs text-zinc-500">
-            {new Date(review.createdAt).toLocaleDateString("en-US", {
-              year: "numeric",
-              month: "short",
-              day: "numeric",
-            })}
-          </p>
-        </div>
-        <RatingStars rating={review.rating} size={12} />
-      </div>
-      {review.content ? (
-        <p className="mt-3 text-sm leading-5 text-[#3b3b3b]">
-          {review.content}
-        </p>
-      ) : null}
-    </article>
+    <Link
+      href={`/cafes/${id}/menu`}
+      className="text-sm font-semibold text-ink underline-offset-4 hover:underline"
+    >
+      View full menu
+    </Link>
   );
 }

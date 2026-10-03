@@ -12,6 +12,8 @@ type Props = {
   text?: string;
   /** Extra classes for the button itself — used by the over-photo variant. */
   className?: string;
+  /** Render as a text button ("Share" with the icon) instead of a round icon. */
+  label?: string;
 };
 
 type Feedback = "copied" | "failed" | null;
@@ -22,7 +24,7 @@ type Feedback = "copied" | "failed" | null;
  * button that silently does nothing reads as broken, which is exactly what
  * this replaced.
  */
-export default function ShareButton({ title, text, className }: Props) {
+export default function ShareButton({ title, text, className, label }: Props) {
   const [feedback, setFeedback] = useState<Feedback>(null);
   const resetTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -73,19 +75,22 @@ export default function ShareButton({ title, text, className }: Props) {
         aria-label="Share cafe"
         onClick={share}
         className={cn(
-          "flex h-11 w-11 items-center justify-center rounded-full border border-zinc-200 bg-white text-[#3b3b3b] transition-colors hover:bg-zinc-50",
+          label
+            ? "flex h-10 items-center gap-2 rounded-full px-3 text-sm font-semibold text-ink underline-offset-4 transition-colors hover:bg-subtle hover:underline"
+            : "flex h-11 w-11 items-center justify-center rounded-full border border-line bg-white text-body transition-colors hover:bg-subtle",
           className,
         )}
       >
         {feedback === "copied" ? (
-          <Check size={18} className="text-[#3A5A40]" />
+          <Check size={18} className="text-brand" />
         ) : (
           <ShareNetwork size={18} />
         )}
+        {label ? <span>{label}</span> : null}
       </button>
       <span
         role="status"
-        className={`pointer-events-none absolute right-0 top-11 z-10 whitespace-nowrap rounded-full bg-[#101514] px-3 py-1.5 text-xs text-white transition-opacity duration-150 ${
+        className={`pointer-events-none absolute right-0 top-full z-10 mt-1 whitespace-nowrap rounded-full bg-ink px-3 py-1.5 text-xs text-white transition-opacity duration-150 ${
           feedback ? "opacity-100" : "opacity-0"
         }`}
       >

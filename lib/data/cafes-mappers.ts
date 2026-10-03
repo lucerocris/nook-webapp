@@ -17,6 +17,9 @@ export type CafeSummary = {
   lat: number | null;
   lng: number | null;
   distanceMeters: number | null;
+  /** Raw operating_hours JSON, or null when the RPC didn't return it. Parse
+   * with parseOperatingHours; an empty result means "unknown", not "closed". */
+  operatingHours: unknown;
 };
 
 export type Tag = {
@@ -174,6 +177,7 @@ export function mapCafeSummary(row: CafeRpcRow): CafeSummary {
     lat: row.lat,
     lng: row.lng,
     distanceMeters: row.distance_meters,
+    operatingHours: row.operating_hours ?? null,
   };
 }
 

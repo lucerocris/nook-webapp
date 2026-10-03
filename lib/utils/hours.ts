@@ -145,3 +145,43 @@ export function isOpenNow(
   }
   return current >= open || current < close;
 }
+
+export type OpenStatus = {
+  isOpen: boolean;
+  /** "until 11:00 PM" while open, "opens 7:00 AM" when it opens later today,
+   * or "" when it doesn't open again today. */
+  detail: string;
+};
+
+/** One-line open state for cards and rows. Returns null when the cafe has no
+ * usable hours, so callers can fall back to something else instead of
+ * claiming "Closed" for a cafe whose hours are simply unknown. */
+export function getOpenStatus(
+  value: unknown,
+  now: Date = new Date(),
+): OpenStatus | null {
+  const hours = parseOperatingHours(value);
+  if (Object.keys(hours).length === 0) return null;
+
+  const { dayKey, minutes: current } = zonedNow(now);
+  const today = hours[dayKey];
+  if (isOpenNow(hours, now) && today) {
+    return { isOpen: true, detail: `until ${format12Hour(today.close)}` };
+  }
+  if (today && !today.closed && toMinutes(today.open) > current) {
+    return { isOpen: false, detail: `opens ${format12Hour(today.open)}` };
+  }
+  return { isOpen: false, detail: "" };
+}
+
+/** True when the cafe's close time on any day is 10 PM or later, or past
+ * midnight. Used for the "Open late" row alongside the Late Night tag. */
+export function closesLate(value: unknown): boolean {
+  const hours = parseOperatingHours(value);
+  return Object.values(hours).some((day) => {
+    if (!day || day.closed) return false;
+    const open = toMinutes(day.open);
+    const close = toMinutes(day.close);
+    return close >= 22 * 60 || close < open;
+  });
+}

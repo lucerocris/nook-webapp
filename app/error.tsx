@@ -18,13 +18,13 @@ export default function Error({
 
   return (
     <main className="flex min-h-[70vh] flex-col items-center justify-center px-6 pt-24 pb-12 text-center">
-      <p className="text-xs font-semibold uppercase tracking-[0.3em] text-[#3A5A40]">
+      <p className="text-xs font-semibold uppercase tracking-[0.3em] text-brand">
         Something went wrong
       </p>
-      <h1 className="mt-4 text-3xl font-semibold tracking-[-0.02em] text-[#101514] sm:text-4xl">
+      <h1 className="mt-4 text-3xl font-semibold tracking-[-0.02em] text-ink sm:text-4xl">
         We hit a snag
       </h1>
-      <p className="mt-3 max-w-md text-sm text-[#3b3b3b]">
+      <p className="mt-3 max-w-md text-sm text-body">
         This one is on us — the page couldn&apos;t load. Try again, or head back
         and keep browsing cafes.
       </p>
@@ -32,19 +32,19 @@ export default function Error({
         <button
           type="button"
           onClick={reset}
-          className="rounded-full bg-[#3A5A40] px-6 py-3 text-sm font-semibold text-white transition-colors hover:bg-[#2f4833]"
+          className="rounded-full bg-brand px-6 py-3 text-sm font-semibold text-white transition-colors hover:bg-brand-hover"
         >
           Try again
         </button>
         <Link
           href="/"
-          className="rounded-full border border-zinc-300 px-6 py-3 text-sm font-medium text-[#3b3b3b] transition-colors hover:bg-zinc-50"
+          className="rounded-full border border-line-strong px-6 py-3 text-sm font-medium text-body transition-colors hover:bg-subtle"
         >
           Back home
         </Link>
       </div>
       {error.digest ? (
-        <p className="mt-6 text-xs text-[#6b6b6b]">Reference: {error.digest}</p>
+        <p className="mt-6 text-xs text-muted">Reference: {error.digest}</p>
       ) : null}
     </main>
   );

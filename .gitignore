@@ -41,3 +41,6 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# Refero reference crops (screenshots of other products) — local only
+docs/references/
