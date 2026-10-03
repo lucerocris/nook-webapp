@@ -1,12 +1,44 @@
 import { Suspense } from "react";
+import type { Metadata } from "next";
 
-import CafeRow from "./components/CafeRow";
+import AppBand from "./components/AppBand";
 import CafeRowSkeleton from "./components/CafeRowSkeleton";
+import CafeShelf from "./components/CafeShelf";
 import Footer from "./components/Footer";
 import Hero from "./components/Hero";
-import NearbyOptIn from "./components/NearbyOptIn";
+import NearYou from "./components/NearYou";
 import { getHomeFeed } from "@/lib/data/cafes";
 import { getCurrentUserId } from "@/lib/data/auth";
+import JsonLd from "./components/JsonLd";
+import { SITE_URL } from "@/lib/env";
+import { BASE_OPEN_GRAPH, SITE_DESCRIPTION } from "@/lib/seo/metadata";
+
+export const metadata: Metadata = {
+  alternates: { canonical: "/" },
+  openGraph: { ...BASE_OPEN_GRAPH, url: "/" },
+};
+
+const siteJsonLd = {
+  "@context": "https://schema.org",
+  "@graph": [
+    {
+      "@type": "WebSite",
+      "@id": `${SITE_URL}/#website`,
+      url: `${SITE_URL}/`,
+      name: "Nook",
+      description: SITE_DESCRIPTION,
+      publisher: { "@id": `${SITE_URL}/#organization` },
+      inLanguage: "en",
+    },
+    {
+      "@type": "Organization",
+      "@id": `${SITE_URL}/#organization`,
+      name: "Nook",
+      url: `${SITE_URL}/`,
+      logo: `${SITE_URL}/logo.svg`,
+    },
+  ],
+};
 
 type Props = {
   searchParams: Promise<{ lat?: string; lng?: string }>;
@@ -31,16 +63,15 @@ function parseCoord(value: string | undefined): number | undefined {
 export default function Home({ searchParams }: Props) {
   return (
     <>
+      <JsonLd data={siteJsonLd} />
       <main className="flex-1">
         <Hero />
-        <Suspense fallback={null}>
-          <NearbyOptIn />
-        </Suspense>
         <Suspense fallback={<CafeRowSkeleton title="Featured" />}>
           <HomeFeed searchParams={searchParams} />
         </Suspense>
+        <AppBand />
       </main>
-      <Footer />
+      <Footer flush />
     </>
   );
 }
@@ -48,11 +79,9 @@ export default function Home({ searchParams }: Props) {
 async function HomeFeed({ searchParams }: Props) {
   const { lat, lng } = await searchParams;
   const userId = await getCurrentUserId();
-  const feed = await getHomeFeed({
-    userId,
-    lat: parseCoord(lat),
-    lng: parseCoord(lng),
-  });
+  const coords = { lat: parseCoord(lat), lng: parseCoord(lng) };
+  const feed = await getHomeFeed({ userId, ...coords });
+  const hasLocation = coords.lat !== undefined && coords.lng !== undefined;
 
   const allEmpty =
     feed.featuredCafes.length === 0 &&
@@ -63,41 +92,43 @@ async function HomeFeed({ searchParams }: Props) {
   if (allEmpty) {
     return (
       <section className="py-16">
-        <div className="mx-auto w-full max-w-7xl px-6 sm:px-8">
-          <p className="mt-4 text-sm text-zinc-500">
-            No cafes available yet. Check back soon.
-          </p>
+        <div className="mx-auto w-full max-w-7xl px-4 sm:px-8">
+          <p className="text-sm text-muted">No cafes on Nook yet. Check back soon.</p>
         </div>
       </section>
     );
   }
 
+  // Where you are first, then the team's picks, the two rankings, and what
+  // is new. Every shelf is the same photo-card row (design.md, Rhythm).
   return (
     <>
-      <CafeRow
+      <NearYou cafes={feed.nearbyCafes} hasLocation={hasLocation} />
+      <CafeShelf
         title="Featured"
+        subtitle="Picked by the Nook team"
         cafes={feed.featuredCafes}
-        emptyHint="No featured cafes right now."
+        badge="Featured"
+        href="/map"
+        priority={!hasLocation}
       />
-      <CafeRow
-        title="New"
-        cafes={feed.newestCafes}
-        emptyHint="No new cafes this week."
-      />
-      <CafeRow
-        title="Trending"
-        cafes={feed.trendingCafes}
-        emptyHint="Nothing trending yet."
-      />
-      <CafeRow
-        title="Top Rated"
+      <CafeShelf
+        title="Top rated"
+        subtitle="Highest rated by the community"
         cafes={feed.topRatedCafes}
-        emptyHint="No rated cafes yet."
+        href="/map"
       />
-      <CafeRow
-        title="Nearby"
-        cafes={feed.nearbyCafes}
-        emptyHint="Use your location to see cafes near you."
+      <CafeShelf
+        title="Trending"
+        subtitle="Most visited and saved lately"
+        cafes={feed.trendingCafes}
+        href="/map"
+      />
+      <CafeShelf
+        title="New on Nook"
+        subtitle="Recently added cafes"
+        cafes={feed.newestCafes}
+        href="/map"
       />
     </>
   );

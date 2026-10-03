@@ -12,7 +12,7 @@ type Props = {
 
 export default function SignupConfirmPage({ searchParams }: Props) {
   return (
-    <div className="rounded-2xl border border-zinc-200 bg-white p-7 shadow-[0_12px_28px_rgba(0,0,0,0.08)]">
+    <div className="rounded-2xl border border-line bg-white p-7 shadow-[0_12px_28px_rgba(0,0,0,0.08)]">
       <Suspense fallback={<ConfirmSkeleton />}>
         <ConfirmContent searchParams={searchParams} />
       </Suspense>
@@ -23,10 +23,10 @@ export default function SignupConfirmPage({ searchParams }: Props) {
 function ConfirmSkeleton() {
   return (
     <div className="animate-pulse">
-      <div className="h-7 w-48 rounded bg-zinc-100" />
-      <div className="mt-3 h-4 w-full rounded bg-zinc-100" />
-      <div className="mt-6 h-11 w-full rounded-lg bg-zinc-100" />
-      <div className="mt-4 h-10 w-full rounded-md bg-zinc-100" />
+      <div className="h-7 w-48 rounded bg-subtle" />
+      <div className="mt-3 h-4 w-full rounded bg-subtle" />
+      <div className="mt-6 h-11 w-full rounded-lg bg-subtle" />
+      <div className="mt-4 h-10 w-full rounded-md bg-subtle" />
     </div>
   );
 }
@@ -42,12 +42,12 @@ async function ConfirmContent({ searchParams }: Props) {
 
   return (
     <>
-      <h1 className="text-2xl font-semibold tracking-[-0.02em] text-[#101514]">
+      <h1 className="text-2xl font-semibold tracking-[-0.02em] text-ink">
         Check your email
       </h1>
-      <p className="mt-1 text-sm text-zinc-500">
+      <p className="mt-1 text-sm text-muted">
         We sent a verification code to{" "}
-        <span className="font-medium text-[#101514]">{address}</span>. Enter it
+        <span className="font-medium text-ink">{address}</span>. Enter it
         below to finish setting up your account.
       </p>
 

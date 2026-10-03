@@ -32,9 +32,9 @@ function RecommendationCard({ rec }: { rec: AiRecommendation }) {
   return (
     <Link
       href={`/cafes/${cafe.id}`}
-      className="flex gap-3 rounded-xl border border-zinc-200 bg-white p-3 transition-colors hover:border-[#3A5A40]/40"
+      className="flex gap-3 rounded-xl border border-line bg-white p-3 transition-colors hover:border-brand/40"
     >
-      <span className="relative h-16 w-16 shrink-0 overflow-hidden rounded-lg bg-[#e3ebe4]">
+      <span className="relative h-16 w-16 shrink-0 overflow-hidden rounded-lg bg-brand-soft">
         {cafe.coverImage ? (
           <Image
             src={cafe.coverImage}
@@ -47,21 +47,21 @@ function RecommendationCard({ rec }: { rec: AiRecommendation }) {
       </span>
       <span className="min-w-0 flex-1">
         <span className="flex items-baseline justify-between gap-2">
-          <span className="truncate text-sm font-semibold text-[#101514]">
+          <span className="truncate text-sm font-semibold text-ink">
             {cafe.name}
           </span>
           {cafe.rating > 0 ? (
-            <span className="shrink-0 text-xs text-[#6b6b6b]">
+            <span className="shrink-0 text-xs text-muted">
               ★ {cafe.rating.toFixed(1)}
             </span>
           ) : null}
         </span>
         {cafe.neighborhood ? (
-          <span className="mt-0.5 block truncate text-xs text-[#6b6b6b]">
+          <span className="mt-0.5 block truncate text-xs text-muted">
             {cafe.neighborhood}
           </span>
         ) : null}
-        <span className="mt-1.5 block text-xs leading-relaxed text-[#3b3b3b]">
+        <span className="mt-1.5 block text-xs leading-relaxed text-body">
           {reason}
         </span>
       </span>
@@ -165,13 +165,13 @@ export default function AskAIPanel({ initialQuery = "", onClose }: Props) {
   const isEmpty = turns.length === 0 && !pending;
 
   return (
-    <div className="overflow-hidden rounded-2xl border border-zinc-200 bg-white shadow-[0_12px_28px_rgba(0,0,0,0.08)]">
-      <div className="flex items-center gap-2 border-b border-zinc-100 px-4 py-3">
-        <Sparkle size={16} weight="fill" className="text-[#3A5A40]" />
-        <span className="text-sm font-semibold text-[#101514]">
+    <div className="overflow-hidden rounded-2xl border border-line bg-white shadow-[0_12px_28px_rgba(0,0,0,0.08)]">
+      <div className="flex items-center gap-2 border-b border-subtle px-4 py-3">
+        <Sparkle size={16} weight="fill" className="text-brand" />
+        <span className="text-sm font-semibold text-ink">
           Ask Nook AI
         </span>
-        <span className="ml-auto text-xs text-[#6b6b6b]">
+        <span className="ml-auto text-xs text-muted">
           Recommends only real cafes on Nook
         </span>
       </div>
@@ -179,7 +179,7 @@ export default function AskAIPanel({ initialQuery = "", onClose }: Props) {
       <div ref={scrollRef} className="max-h-[26rem] overflow-y-auto px-4 py-3">
         {isEmpty ? (
           <div className="py-2">
-            <p className="text-sm text-[#3b3b3b]">
+            <p className="text-sm text-body">
               Describe the cafe you&apos;re after — vibe, budget, what you need
               it for.
             </p>
@@ -189,7 +189,7 @@ export default function AskAIPanel({ initialQuery = "", onClose }: Props) {
                   key={s}
                   type="button"
                   onClick={() => send(s)}
-                  className="rounded-full border border-zinc-200 px-3 py-1.5 text-xs font-medium text-[#3b3b3b] transition-colors hover:border-[#3A5A40]/40 hover:bg-[#e3ebe4]/50"
+                  className="rounded-full border border-line px-3 py-1.5 text-xs font-medium text-body transition-colors hover:border-brand/40 hover:bg-brand-soft/50"
                 >
                   {s}
                 </button>
@@ -202,13 +202,13 @@ export default function AskAIPanel({ initialQuery = "", onClose }: Props) {
           {turns.map((turn, i) =>
             turn.role === "user" ? (
               <div key={i} className="flex justify-end">
-                <p className="max-w-[85%] rounded-2xl rounded-br-sm bg-[#3A5A40] px-3.5 py-2 text-sm text-white">
+                <p className="max-w-[85%] rounded-2xl rounded-br-sm bg-brand px-3.5 py-2 text-sm text-white">
                   {turn.content}
                 </p>
               </div>
             ) : (
               <div key={i} className="flex flex-col gap-2.5">
-                <p className="text-sm leading-relaxed text-[#3b3b3b]">
+                <p className="text-sm leading-relaxed text-body">
                   {turn.content}
                 </p>
                 {turn.recommendations && turn.recommendations.length > 0 ? (
@@ -223,11 +223,11 @@ export default function AskAIPanel({ initialQuery = "", onClose }: Props) {
           )}
 
           {pending ? (
-            <LoadingDots className="text-[#3A5A40]" label="Thinking" />
+            <LoadingDots className="text-brand" label="Thinking" />
           ) : null}
 
           {error ? (
-            <p role="alert" className="text-sm text-[#b94a48]">
+            <p role="alert" className="text-sm text-closed">
               {error}
             </p>
           ) : null}
@@ -239,7 +239,7 @@ export default function AskAIPanel({ initialQuery = "", onClose }: Props) {
           e.preventDefault();
           send(input);
         }}
-        className="flex items-center gap-2 border-t border-zinc-100 p-3"
+        className="flex items-center gap-2 border-t border-subtle p-3"
       >
         <input
           ref={inputRef}
@@ -248,13 +248,13 @@ export default function AskAIPanel({ initialQuery = "", onClose }: Props) {
           maxLength={500}
           placeholder="Ask about any cafe in Cebu..."
           aria-label="Ask the cafe assistant"
-          className="min-w-0 flex-1 rounded-full border border-zinc-200 px-4 py-2.5 text-sm text-[#101514] outline-none transition-colors focus:border-[#3A5A40] placeholder:text-zinc-400"
+          className="min-w-0 flex-1 rounded-full border border-line px-4 py-2.5 text-sm text-ink outline-none transition-colors focus:border-brand placeholder:text-muted"
         />
         <button
           type="submit"
           disabled={pending || input.trim().length === 0}
           aria-label="Send"
-          className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-[#3A5A40] text-white transition-colors hover:bg-[#2f4833] disabled:cursor-not-allowed disabled:opacity-40"
+          className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-brand text-white transition-colors hover:bg-brand-hover disabled:cursor-not-allowed disabled:opacity-40"
         >
           <ArrowUp size={16} weight="bold" />
         </button>

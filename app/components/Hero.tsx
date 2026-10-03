@@ -1,70 +1,84 @@
 import { Suspense } from "react";
+import Link from "next/link";
 
 import HeroSearch from "./HeroSearch";
 import { getSearchTags, searchCafes } from "@/lib/data/search";
+import { getTagIcon } from "@/lib/utils/tag-icon";
 
-function HeroShell({ children }: { children: React.ReactNode }) {
-  return (
-    /* `pt-48` was 192px of empty space above the heading on every phone — a
-       third of a 568px viewport, to clear an 80px navbar. Scaled down at the
-       narrow end so the search bar's buttons stay above the fold. */
-    <section className="relative pt-32 pb-16 sm:pt-48 sm:pb-24 lg:pt-64">
-      {/* Decorative only — green glow behind the hero (page-wide dots come from
-          the body background). overflow-hidden lives here, not on the section,
-          so the glow is clipped without also clipping the search dropdown. */}
-      <div aria-hidden className="pointer-events-none absolute inset-0 overflow-hidden">
-        <div className="hero-glow absolute inset-x-0 top-0 h-[640px]" />
-      </div>
-
-      <div className="mx-auto w-full max-w-5xl px-6 sm:px-8">
-        <div className="relative z-10 flex flex-col items-center text-center">
-          <h1 className="text-4xl font-semibold tracking-tight text-[#3b3b3b] sm:text-5xl">
-            Philippine cafes, community curated.
-          </h1>
-
-          <p className="mt-4 text-lg text-[#3b3b3b]">
-            Find the perfect spot to work, study, or chill. Filter by Wi-Fi,
-            outlets, and vibe, or ask our AI to find your match.
-          </p>
-
-          <div className="w-full">{children}</div>
-
-          <p className="mt-6 text-sm text-[#3b3b3b]">
-            <span className="font-semibold">50+ cafes,</span> vetted by the
-            local community.
-          </p>
-        </div>
-      </div>
-    </section>
-  );
-}
+/** Quick filters under the search field. Each one opens the map already
+ * filtered; only tags that exist in the live tag list are shown. */
+const QUICK_TAGS = ["Wi-Fi", "Power Outlets", "Quiet", "Open Late", "Study", "Pet Friendly"];
 
 function HeroSearchFallback() {
-  return (
-    <div
-      aria-hidden="true"
-      /* Matches the real control's height at each breakpoint — stacked below
-         `sm` it is 112px (8 + 44 + 8 + 44 + 8), one row above. A flat 52px
-         here shifted the whole page down when the search bar streamed in. */
-      className="mt-6 h-[112px] w-full animate-pulse rounded-3xl bg-zinc-100 sm:h-[60px] sm:rounded-full"
-    />
-  );
+  return <div aria-hidden="true" className="h-14 w-full animate-pulse rounded-full bg-paper sm:h-16" />;
 }
 
 async function HeroSearchContent() {
-  const [tags, topCafes] = await Promise.all([
-    getSearchTags(),
-    searchCafes({ limit: 5 }),
-  ]);
+  const [tags, topCafes] = await Promise.all([getSearchTags(), searchCafes({ limit: 5 })]);
   return <HeroSearch tags={tags} initialCafes={topCafes} />;
 }
 
+async function QuickChips() {
+  const tags = await getSearchTags();
+  const known = new Map(
+    [...tags.amenities, ...tags.bestFor].map((t) => [t.name.toLowerCase(), t.name]),
+  );
+  const chips = QUICK_TAGS.map((name) => known.get(name.toLowerCase())).filter(
+    (name): name is string => Boolean(name),
+  );
+  // Fall back to the first few live tags if none of the preferred names exist.
+  const shown =
+    chips.length >= 3 ? chips : [...tags.amenities, ...tags.bestFor].slice(0, 6).map((t) => t.name);
+
+  if (shown.length === 0) return null;
+
+  return (
+    <ul
+      aria-label="Quick filters"
+      className="no-scrollbar -mx-4 mt-4 flex w-[calc(100%+2rem)] gap-2 overflow-x-auto px-4 [overscroll-behavior-x:contain] sm:mx-0 sm:w-full sm:flex-wrap sm:justify-center sm:overflow-visible sm:px-0"
+    >
+      {shown.map((name) => {
+        const Icon = getTagIcon(name);
+        return (
+          <li key={name} className="shrink-0">
+            <Link
+              href={`/map?tags=${encodeURIComponent(name)}`}
+              className="inline-flex h-10 items-center gap-1.5 rounded-full border border-line bg-white px-4 text-[13px] font-medium text-body transition-colors hover:border-line-strong hover:bg-paper hover:text-ink focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand"
+            >
+              <Icon size={16} className="text-fern" aria-hidden />
+              {name}
+            </Link>
+          </li>
+        );
+      })}
+    </ul>
+  );
+}
+
+/**
+ * Short hero (design.md, Photo shelves): one headline, the pill search as the
+ * page's loud moment, and quick filter chips, so the first shelf of photos
+ * starts within the first screen (structure after Airbnb and Tripadvisor).
+ */
 export default function Hero() {
   return (
-    <HeroShell>
-      <Suspense fallback={<HeroSearchFallback />}>
-        <HeroSearchContent />
-      </Suspense>
-    </HeroShell>
+    <section className="pb-2 pt-24 sm:pt-32">
+      <div className="mx-auto flex w-full max-w-3xl flex-col items-center px-4 text-center sm:px-8">
+        <h1 className="text-balance text-[2rem] font-semibold leading-[1.1] tracking-[-0.03em] text-ink sm:text-[2.75rem] lg:text-5xl">
+          Find a cafe to work, study or slow down
+        </h1>
+        <p className="mt-3 text-[15px] text-muted sm:text-base">
+          Cebu cafes with their Wi-Fi, outlets, hours and menus, kept by the community.
+        </p>
+        <div className="mt-8 w-full">
+          <Suspense fallback={<HeroSearchFallback />}>
+            <HeroSearchContent />
+          </Suspense>
+        </div>
+        <Suspense fallback={<div className="mt-4 h-10" />}>
+          <QuickChips />
+        </Suspense>
+      </div>
+    </section>
   );
 }

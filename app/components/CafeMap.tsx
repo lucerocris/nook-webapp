@@ -132,11 +132,18 @@ export default function CafeMap({
         style: style as string | maplibregl.StyleSpecification,
         center,
         zoom: initialZoom,
+        // Collapsed to an (i) button: expanded, the credit line covered a
+        // third of the small location map on the cafe page.
+        attributionControl: { compact: true },
       });
       mapRef.current = map;
 
       map.on("load", () => {
         if (destroyed) return;
+        // Compact attribution still opens expanded on load; start it closed.
+        containerRef.current
+          ?.querySelector(".maplibregl-ctrl-attrib")
+          ?.classList.remove("maplibregl-compact-show");
 
         const geojson = buildCafeGeoJSON(validCafes);
         registerPillImages(map, validCafes, registeredPillIdsRef.current);
@@ -697,26 +704,26 @@ function buildPopupCard(cafe: CafeSummary): HTMLElement {
 
   const cover = cafe.coverImage
     ? `<img src="${escapeHtml(cafe.coverImage)}" alt="${name}" class="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105" />`
-    : `<div class="flex h-full w-full items-center justify-center text-xs text-zinc-400">${name}</div>`;
+    : `<div class="flex h-full w-full items-center justify-center text-xs text-muted">${name}</div>`;
 
   const newBadge = cafe.isNew
-    ? `<span class="absolute left-3 top-3 rounded-full bg-[#3A5A40] px-2.5 py-0.5 text-[11px] font-semibold text-white">New</span>`
+    ? `<span class="absolute left-3 top-3 rounded-full bg-brand px-2.5 py-0.5 text-[11px] font-semibold text-white">New</span>`
     : "";
 
   const ratingBadge =
     cafe.rating > 0
-      ? `<span class="flex shrink-0 items-center gap-1 text-xs font-medium text-[#3b3b3b]">
+      ? `<span class="flex shrink-0 items-center gap-1 text-xs font-medium text-body">
            ${iconSvg(STAR_FILL_PATH, 13, "#3A5A40")}${cafe.rating.toFixed(1)}
-           <span class="text-zinc-400">(${cafe.reviewCount})</span>
+           <span class="text-muted">(${cafe.reviewCount})</span>
          </span>`
-      : `<span class="flex shrink-0 items-center text-zinc-400">
+      : `<span class="flex shrink-0 items-center text-muted">
            ${iconSvg(COFFEE_ICON_PATH, 15, "currentColor")}
          </span>`;
 
   const tagsHtml = visibleTags
     .map(
       (tag) =>
-        `<span class="rounded-full border border-zinc-200 bg-white px-2.5 py-0.5 text-[11px] font-medium text-[#3b3b3b]">${escapeHtml(
+        `<span class="rounded-full border border-line bg-white px-2.5 py-0.5 text-[11px] font-medium text-body">${escapeHtml(
           tag,
         )}</span>`,
     )
@@ -726,16 +733,16 @@ function buildPopupCard(cafe: CafeSummary): HTMLElement {
   container.className = "cafe-popup-card w-64 overflow-hidden rounded-2xl bg-white";
   container.innerHTML = `
     <a href="/cafes/${encodeURIComponent(cafe.id)}" class="group block">
-      <div class="relative aspect-[4/3] w-full overflow-hidden rounded-t-xl bg-zinc-100">
+      <div class="relative aspect-[4/3] w-full overflow-hidden rounded-t-xl bg-subtle">
         ${cover}
         ${newBadge}
       </div>
       <div class="px-3 pb-3 pt-3">
         <div class="flex items-center justify-between gap-2">
-          <span class="truncate text-sm font-semibold text-[#3b3b3b]">${name}</span>
+          <span class="truncate text-sm font-semibold text-body">${name}</span>
           ${ratingBadge}
         </div>
-        ${area ? `<p class="mt-1 truncate text-xs text-zinc-500">${escapeHtml(area)}</p>` : ""}
+        ${area ? `<p class="mt-1 truncate text-xs text-muted">${escapeHtml(area)}</p>` : ""}
         ${tagsHtml ? `<div class="mt-3 flex flex-wrap items-center gap-1.5">${tagsHtml}</div>` : ""}
       </div>
     </a>

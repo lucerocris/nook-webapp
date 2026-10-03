@@ -50,6 +50,15 @@ export default function CafeLocationMap({
         center: [lng, lat],
         zoom: 15.5,
         cooperativeGestures: true,
+        // The full credit line covered a quarter of a phone-sized map; the
+        // compact control keeps it one tap away.
+        attributionControl: { compact: true },
+      });
+      // MapLibre opens the compact credit on first load; start it closed.
+      map.once("load", () => {
+        containerRef.current
+          ?.querySelector(".maplibregl-ctrl-attrib")
+          ?.classList.remove("maplibregl-compact-show");
       });
 
       const popup = new maplibre.Popup({ offset: 28 }).setText(

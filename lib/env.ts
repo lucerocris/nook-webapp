@@ -36,9 +36,10 @@ export const SUPABASE_PUBLISHABLE_KEY = required(
   process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY,
 );
 
-/** Absolute base for canonical/OG URLs. Optional: without it every canonical,
- * OG image, robots.txt sitemap pointer and sitemap entry silently points at
- * the fallback host, which is an SEO outage that is hard to notice. Set it
- * explicitly in production. */
+/** Absolute base for canonical/OG URLs, robots.txt and the sitemap. The
+ * fallback is the host production actually serves from. It used to be the
+ * apex `nookph.app`, which does not resolve — and production never set the
+ * env var — so every canonical and sitemap entry pointed crawlers at a dead
+ * host. Override per environment if a deployment lives elsewhere. */
 export const SITE_URL =
-  process.env.NEXT_PUBLIC_SITE_URL ?? "https://nookph.app";
+  process.env.NEXT_PUBLIC_SITE_URL ?? "https://www.nookph.app";

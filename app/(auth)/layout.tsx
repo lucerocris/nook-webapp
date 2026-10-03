@@ -1,4 +1,11 @@
 import Link from "next/link";
+import type { Metadata } from "next";
+
+// Disallowed in robots.txt too, but a disallowed URL can still be indexed from
+// external links; noindex is what keeps it out once a crawler does fetch it.
+export const metadata: Metadata = {
+  robots: { index: false, follow: true },
+};
 
 export default function AuthLayout({
   children,
@@ -10,7 +17,7 @@ export default function AuthLayout({
       <div className="w-full max-w-sm">
         <Link
           href="/"
-          className="mb-8 block text-center text-sm text-zinc-500 transition-colors hover:text-zinc-800"
+          className="mb-8 block text-center text-sm text-muted transition-colors hover:text-ink"
         >
           &larr; Back to Nook
         </Link>

@@ -32,11 +32,11 @@ function LoginForm({
   );
 
   return (
-    <div className="rounded-2xl border border-zinc-200 bg-white p-7 shadow-[0_12px_28px_rgba(0,0,0,0.08)]">
-      <h1 className="text-2xl font-semibold tracking-[-0.02em] text-[#101514]">
+    <div className="rounded-2xl border border-line bg-white p-7 shadow-[0_12px_28px_rgba(0,0,0,0.08)]">
+      <h1 className="text-2xl font-semibold tracking-[-0.02em] text-ink">
         Welcome back
       </h1>
-      <p className="mt-1 text-sm text-zinc-500">
+      <p className="mt-1 text-sm text-muted">
         Sign in to save cafes and pick up where you left off.
       </p>
 
@@ -55,24 +55,24 @@ function LoginForm({
 
       <form action={formAction} className="mt-6 space-y-4">
         <label className="block">
-          <span className="text-sm font-medium text-[#101514]">Email</span>
+          <span className="text-sm font-medium text-ink">Email</span>
           <input
             name="email"
             type="email"
             autoComplete="email"
             required
-            className="mt-1.5 block w-full rounded-lg border border-zinc-200 bg-white px-3 py-2.5 text-sm text-[#101514] outline-none transition-colors focus:border-[#31533f]"
+            className="mt-1.5 block w-full rounded-lg border border-line bg-white px-3 py-2.5 text-sm text-ink outline-none transition-colors focus:border-brand"
           />
         </label>
         <label className="block">
-          <span className="text-sm font-medium text-[#101514]">Password</span>
+          <span className="text-sm font-medium text-ink">Password</span>
           <input
             name="password"
             type="password"
             autoComplete="current-password"
             required
             minLength={8}
-            className="mt-1.5 block w-full rounded-lg border border-zinc-200 bg-white px-3 py-2.5 text-sm text-[#101514] outline-none transition-colors focus:border-[#31533f]"
+            className="mt-1.5 block w-full rounded-lg border border-line bg-white px-3 py-2.5 text-sm text-ink outline-none transition-colors focus:border-brand"
           />
         </label>
 
@@ -85,17 +85,17 @@ function LoginForm({
         <button
           type="submit"
           disabled={pending}
-          className="flex h-10 w-full items-center justify-center rounded-md bg-[#31533f] px-4 text-sm font-semibold text-white transition-colors hover:bg-[#294635] disabled:cursor-not-allowed disabled:opacity-60"
+          className="flex h-10 w-full items-center justify-center rounded-md bg-brand px-4 text-sm font-semibold text-white transition-colors hover:bg-brand-hover disabled:cursor-not-allowed disabled:opacity-60"
         >
           {pending ? "Signing in..." : "Sign in"}
         </button>
       </form>
 
-      <p className="mt-6 text-center text-xs text-zinc-500">
+      <p className="mt-6 text-center text-xs text-muted">
         Don&apos;t have an account?{" "}
         <Link
           href="/signup"
-          className="font-medium text-[#31533f] hover:underline"
+          className="font-medium text-brand hover:underline"
         >
           Create one
         </Link>

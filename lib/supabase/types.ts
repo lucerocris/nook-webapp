@@ -205,6 +205,9 @@ export type CafeRpcRow = {
   distance_meters: number | null;
   tags: CafeRpcTag[] | null;
   created_at?: string | null;
+  /** Returned by the map RPCs, and by get_cafes once migration
+   * 20261003092000 is applied. Absent until then, so it stays optional. */
+  operating_hours?: unknown;
 };
 
 export type CafeRpcTag = {

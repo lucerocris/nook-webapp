@@ -2,167 +2,96 @@ import Image from "next/image";
 import Link from "next/link";
 import { Coffee, Star } from "@phosphor-icons/react/dist/ssr";
 
+import { cn } from "@/lib/utils";
 import { formatDistance } from "@/lib/utils/format";
+import { getOpenStatus } from "@/lib/utils/hours";
 import type { CafeSummary } from "@/lib/data/cafes-mappers";
 
 type Props = {
   cafe: CafeSummary;
   priority?: boolean;
-  /** "map" trims the card for the map page: photo squared at the bottom,
-   * rating shown as a badge in the top-right, no heart, no distance. */
-  variant?: "default" | "map";
+  /** Small pill pinned to the photo, e.g. "Featured". */
+  badge?: string;
 };
 
-function PlaceholderImage({ alt }: { alt: string }) {
+/** Stand-in for a cafe with no photos yet, so the card keeps its shape. */
+function NoPhoto() {
   return (
-    <div className="flex h-full w-full items-center justify-center bg-zinc-100 text-xs text-zinc-400">
-      {alt}
+    <div className="flex h-full w-full items-center justify-center bg-paper text-sage">
+      <Coffee size={32} aria-hidden />
     </div>
   );
 }
 
-function CardImage({
-  cafe,
-  priority,
-  rounded,
-}: {
-  cafe: CafeSummary;
-  priority?: boolean;
-  rounded: string;
-}) {
-  return (
-    <div
-      className={`relative aspect-[4/3] w-full overflow-hidden ${rounded} bg-zinc-100`}
-    >
-      {cafe.coverImage ? (
-        <Image
-          src={cafe.coverImage}
-          alt={cafe.name}
-          fill
-          priority={priority}
-          sizes="(min-width: 1024px) 25vw, (min-width: 640px) 50vw, 100vw"
-          className="object-cover transition-transform duration-300 group-hover:scale-105"
-        />
-      ) : (
-        <PlaceholderImage alt={cafe.name} />
-      )}
-      {cafe.isNew ? (
-        <span className="absolute left-3 top-3 rounded-full bg-[#3A5A40] px-2.5 py-0.5 text-[11px] font-semibold text-white">
-          New
-        </span>
-      ) : null}
-    </div>
-  );
-}
-
-export default function CafeCard({ cafe, priority, variant = "default" }: Props) {
+/**
+ * Photo-first listing card (design.md, Photo shelves): rounded photo with an
+ * optional badge, then name and rating, area and distance, and the open state
+ * as a dot plus text (two tags when hours are unknown).
+ */
+export default function CafeCard({ cafe, priority, badge }: Props) {
   const area = cafe.neighborhood ?? cafe.city;
+  const distance = formatDistance(cafe.distanceMeters);
+  const status = getOpenStatus(cafe.operatingHours);
+  const place = [area, distance].filter(Boolean).join(" · ");
   const visibleTags = cafe.tags.slice(0, 2);
 
-  if (variant === "map") {
-    return (
-      <Link href={`/cafes/${cafe.id}`} className="group block">
-        {/* No overflow-hidden here — it was clipping the bottom tag pills. */}
-        <article className="flex flex-col rounded-2xl bg-white">
-          <CardImage cafe={cafe} priority={priority} rounded="rounded-xl" />
-
-          <div className="mt-3 flex items-center justify-between gap-2">
-            <span className="truncate text-sm font-semibold text-[#3b3b3b]">
-              {cafe.name}
-            </span>
-            <span className="flex shrink-0 items-center gap-1 text-xs font-medium text-[#3b3b3b]">
-              {cafe.rating > 0 ? (
-                <>
-                  <Star size={13} weight="fill" className="text-[#3A5A40]" />
-                  {cafe.rating.toFixed(1)}
-                  <span className="text-zinc-400">({cafe.reviewCount})</span>
-                </>
-              ) : (
-                <Coffee size={15} weight="regular" className="text-zinc-400" />
-              )}
-            </span>
-          </div>
-
-          {area ? (
-            <p className="mt-1 truncate text-xs text-zinc-500">{area}</p>
-          ) : null}
-
-          {visibleTags.length > 0 ? (
-            <div className="mt-3 flex flex-wrap items-center gap-1.5">
-              {visibleTags.map((tag) => (
-                <span
-                  key={tag}
-                  className="rounded-full border border-zinc-200 bg-white px-2.5 py-0.5 text-[11px] font-medium text-[#3b3b3b]"
-                >
-                  {tag}
-                </span>
-              ))}
-            </div>
-          ) : null}
-        </article>
-      </Link>
-    );
-  }
-
-  const distance = formatDistance(cafe.distanceMeters);
-
   return (
-    <Link href={`/cafes/${cafe.id}`} className="group block">
-      {/* No overflow-hidden — it was clipping the bottom tag pills. */}
-      <article className="flex flex-col rounded-2xl bg-white">
-        <CardImage cafe={cafe} priority={priority} rounded="rounded-xl" />
-
-        <span className="mt-3 block text-sm font-semibold text-[#3b3b3b]">
-          {cafe.name}
-        </span>
-
-        <div className="mt-2 flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-[#3b3b3b]">
-          {cafe.rating > 0 ? (
-            <>
-              <span className="transition-[font-size] duration-200 group-hover:text-base group-hover:font-semibold">
-                {cafe.rating.toFixed(1)}
-              </span>
-              <span className="flex items-center gap-0.5">
-                {Array.from({ length: 5 }).map((_, index) => (
-                  <Star
-                    key={index}
-                    size={12}
-                    weight={index < Math.round(cafe.rating) ? "fill" : "regular"}
-                    className="text-[#3A5A40]"
-                  />
-                ))}
-              </span>
-              <span>({cafe.reviewCount})</span>
-            </>
+    <Link
+      href={`/cafes/${cafe.id}`}
+      className="group block rounded-[20px] outline-none focus-visible:ring-2 focus-visible:ring-brand focus-visible:ring-offset-4"
+    >
+      <article className="flex flex-col">
+        <div className="relative aspect-[5/4] w-full overflow-hidden rounded-[20px] bg-paper">
+          {cafe.coverImage ? (
+            <Image
+              src={cafe.coverImage}
+              alt=""
+              fill
+              priority={priority}
+              sizes="(min-width: 1280px) 240px, (min-width: 1024px) 25vw, (min-width: 640px) 40vw, 72vw"
+              className="object-cover transition-opacity duration-200 group-hover:opacity-90"
+            />
           ) : (
-            <span className="flex items-center gap-1 text-zinc-400">
-              <Coffee size={14} weight="regular" />
-              No ratings yet
-            </span>
+            <NoPhoto />
           )}
-          {area ? (
-            <>
-              <span>·</span>
-              <span>{area}</span>
-            </>
+          {badge ? (
+            <span className="absolute left-3 top-3 rounded-full bg-white px-2.5 py-1 text-xs font-semibold text-ink shadow-raise">
+              {badge}
+            </span>
           ) : null}
         </div>
 
-        <div className="mt-3 flex items-center justify-between gap-2">
-          <div className="flex flex-wrap items-center gap-1.5">
-            {visibleTags.map((tag) => (
-              <span
-                key={tag}
-                className="rounded-full border border-zinc-200 bg-white px-2.5 py-0.5 text-[11px] font-medium text-[#3b3b3b]"
-              >
-                {tag}
-              </span>
-            ))}
-          </div>
-          {distance ? (
-            <span className="shrink-0 text-xs text-[#3b3b3b]">{distance}</span>
-          ) : null}
+        <div className="mt-3 flex items-start justify-between gap-2">
+          <h3 className="min-w-0 truncate text-[15px] font-semibold text-ink">{cafe.name}</h3>
+          {/* "New" replaces the score when there are no reviews, rather than an
+              empty rating that reads as a bad one. */}
+          {cafe.reviewCount > 0 ? (
+            <span className="flex shrink-0 items-center gap-1 text-sm tabular-nums text-ink">
+              <Star size={13} weight="fill" className="text-fern" aria-hidden />
+              {cafe.rating.toFixed(1)}
+              <span className="text-muted">({cafe.reviewCount})</span>
+            </span>
+          ) : (
+            <span className="shrink-0 text-sm text-muted">New</span>
+          )}
         </div>
+
+        {place ? <p className="mt-0.5 truncate text-sm text-muted">{place}</p> : null}
+
+        {status ? (
+          <p className="mt-0.5 flex items-center gap-1.5 truncate text-sm text-muted">
+            <span
+              aria-hidden
+              className={cn("size-1.5 shrink-0 rounded-full", status.isOpen ? "bg-open" : "bg-closed")}
+            />
+            <span className={cn("font-medium", status.isOpen ? "text-open" : "text-closed")}>
+              {status.isOpen ? "Open" : "Closed"}
+            </span>
+            {status.detail ? <span className="truncate">{status.detail}</span> : null}
+          </p>
+        ) : visibleTags.length > 0 ? (
+          <p className="mt-0.5 truncate text-sm text-muted">{visibleTags.join(" · ")}</p>
+        ) : null}
       </article>
     </Link>
   );

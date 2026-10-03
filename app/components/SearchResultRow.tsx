@@ -26,8 +26,8 @@ type CafeRowProps = {
 
 type Props = TagRowProps | CafeRowProps;
 
-const ICON_BG = "bg-[#e3ebe4]";
-const ICON_FG = "text-[#3A5A40]";
+const ICON_BG = "bg-brand-soft";
+const ICON_FG = "text-brand";
 
 function TagAvatar({ name }: { name: string }) {
   const Icon = getTagIcon(name);
@@ -52,7 +52,7 @@ function CafeAvatar({
   if (!src) {
     return (
       <span
-        className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-zinc-100 text-sm font-semibold text-zinc-500"
+        className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-subtle text-sm font-semibold text-muted"
         aria-hidden="true"
       >
         {alt.charAt(0).toUpperCase()}
@@ -60,7 +60,7 @@ function CafeAvatar({
     );
   }
   return (
-    <span className="relative h-10 w-10 shrink-0 overflow-hidden rounded-xl bg-zinc-100">
+    <span className="relative h-10 w-10 shrink-0 overflow-hidden rounded-xl bg-subtle">
       <Image
         src={src}
         alt={alt}
@@ -75,14 +75,14 @@ function CafeAvatar({
 export default function SearchResultRow(props: Props) {
   const { onClick, as, href } = props;
   const className =
-    "flex w-full items-center gap-3 rounded-lg px-2 py-2 text-left transition-colors hover:bg-zinc-50";
+    "flex w-full items-center gap-3 rounded-lg px-2 py-2 text-left transition-colors hover:bg-subtle";
 
   let content: React.ReactNode;
   if (props.kind === "tag") {
     content = (
       <>
         <TagAvatar name={props.name} />
-        <span className="min-w-0 flex-1 truncate text-sm font-medium text-[#101514]">
+        <span className="min-w-0 flex-1 truncate text-sm font-medium text-ink">
           {props.name}
         </span>
         <span
@@ -90,8 +90,8 @@ export default function SearchResultRow(props: Props) {
           className={[
             "flex h-5 w-5 shrink-0 items-center justify-center rounded-md border transition-colors",
             props.selected
-              ? "border-[#3A5A40] bg-[#3A5A40] text-white"
-              : "border-zinc-300 bg-white text-transparent",
+              ? "border-brand bg-brand text-white"
+              : "border-line-strong bg-white text-transparent",
           ].join(" ")}
         >
           <Check size={13} weight="bold" />
@@ -106,15 +106,15 @@ export default function SearchResultRow(props: Props) {
       <>
         <CafeAvatar src={cafe.coverImage} alt={cafe.name} />
         <span className="min-w-0 flex-1">
-          <span className="block truncate text-sm font-semibold text-[#101514]">
+          <span className="block truncate text-sm font-semibold text-ink">
             {cafe.name}
           </span>
-          <span className="block truncate text-xs text-zinc-500">
+          <span className="block truncate text-xs text-muted">
             {[cafe.address, area].filter(Boolean).join(" · ")}
           </span>
         </span>
         {distance ? (
-          <span className="shrink-0 text-xs text-zinc-500">{distance}</span>
+          <span className="shrink-0 text-xs text-muted">{distance}</span>
         ) : null}
       </>
     );
