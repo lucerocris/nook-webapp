@@ -84,7 +84,7 @@ export function formatTimeRange(hours: DayHours | null | undefined): string {
   const open = format12Hour(hours.open);
   const close = format12Hour(hours.close);
   if (!open || !close) return "";
-  return `${open} - ${close}`;
+  return `${open} – ${close}`;
 }
 
 /** Cafe opening hours are stored as local Philippine wall-clock times, so both
@@ -172,6 +172,21 @@ export function getOpenStatus(
     return { isOpen: false, detail: `opens ${format12Hour(today.open)}` };
   }
   return { isOpen: false, detail: "" };
+}
+
+/** Minutes until the cafe closes, while it is open; null when it is closed
+ * or has no usable hours. Handles hours that run past midnight. */
+export function minutesUntilClose(
+  hours: OperatingHours,
+  now: Date = new Date(),
+): number | null {
+  if (!isOpenNow(hours, now)) return null;
+  const { dayKey, minutes: current } = zonedNow(now);
+  const today = hours[dayKey];
+  if (!today) return null;
+  let close = toMinutes(today.close);
+  if (close <= current) close += 24 * 60;
+  return close - current;
 }
 
 /** True when the cafe's close time on any day is 10 PM or later, or past

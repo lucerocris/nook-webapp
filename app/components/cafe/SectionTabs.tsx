@@ -50,7 +50,9 @@ export default function SectionTabs({ tabs }: { tabs: SectionTab[] }) {
       aria-label="Sections"
       className="sticky top-0 z-30 -mx-4 mt-4 border-b border-line bg-white px-4 sm:-mx-8 sm:px-8 lg:top-16 lg:mx-0 lg:mt-6 lg:px-0"
     >
-      <ul className="no-scrollbar flex gap-6 overflow-x-auto">
+      {/* On a phone the last tab runs off the edge; the fade says the row scrolls
+          instead of looking clipped. */}
+      <ul className="no-scrollbar flex gap-6 overflow-x-auto pr-8 [mask-image:linear-gradient(to_right,black_85%,transparent)] lg:pr-0 lg:[mask-image:none]">
         {tabs.map((tab) => (
           <li key={tab.id} className="shrink-0">
             <a

@@ -1,5 +1,7 @@
 "use client";
 
+import Link from "next/link";
+
 import { useEffect, useRef, useState } from "react";
 import Image from "next/image";
 import { GridFour, X } from "@phosphor-icons/react";
@@ -107,6 +109,16 @@ export default function CafeGallery({ cafeName, images }: Props) {
       ) : null}
 
       <BackButton className="absolute left-4 top-[calc(1rem+env(safe-area-inset-top))] z-10 lg:hidden" />
+      {/* Phones have no navbar on this page; the wordmark keeps the brand and
+          a way home in the first screen. */}
+      <Link
+        href="/"
+        aria-label="Nook home"
+        className="absolute left-1/2 top-[calc(1rem+env(safe-area-inset-top))] z-10 flex h-10 -translate-x-1/2 items-center rounded-full bg-white/90 px-4 shadow-sm backdrop-blur lg:hidden"
+      >
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img src="/logo.svg" alt="" className="h-[18px] w-auto" />
+      </Link>
 
       <div className="absolute right-4 top-[calc(1rem+env(safe-area-inset-top))] z-10 lg:hidden">
         <ShareButton

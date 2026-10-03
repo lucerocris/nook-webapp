@@ -18,7 +18,7 @@ function LeaveReviewPrompt({ first }: { first: boolean }) {
       <p className="mt-1 text-sm text-body">Reviews are written in the Nook app.</p>
       <Link
         href="/download-app"
-        className="mt-4 inline-flex h-10 items-center rounded-full border border-ink px-4 text-sm font-semibold text-ink transition-colors hover:bg-paper focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand"
+        className="mt-4 inline-flex h-10 items-center rounded-full border border-brand px-4 text-sm font-semibold text-brand transition-colors hover:bg-brand-soft focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand"
       >
         Get the app
       </Link>

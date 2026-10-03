@@ -30,6 +30,17 @@ type Props = {
 export default function CafeStickyBar({ cafeName, hours, mapsUrl }: Props) {
   const [now, setNow] = useState<Date | null>(null);
 
+  // The title block has its own Get directions; the bar only appears once
+  // that row has scrolled out of view, so the action is never shown twice.
+  const [titleVisible, setTitleVisible] = useState(true);
+  useEffect(() => {
+    const el = document.getElementById("title-actions");
+    if (!el) return;
+    const io = new IntersectionObserver(([entry]) => setTitleVisible(entry.isIntersecting));
+    io.observe(el);
+    return () => io.disconnect();
+  }, []);
+
   useEffect(() => {
     const tick = () => setNow(new Date());
     tick();
@@ -63,7 +74,12 @@ export default function CafeStickyBar({ cafeName, hours, mapsUrl }: Props) {
         : "Hours not available";
 
   return (
-    <div className="fixed inset-x-0 bottom-0 z-40 border-t border-line bg-white lg:hidden">
+    <div
+      aria-hidden={titleVisible}
+      className={`fixed inset-x-0 bottom-0 z-40 border-t border-line bg-white transition-transform duration-200 lg:hidden ${
+        titleVisible ? "pointer-events-none translate-y-full" : "translate-y-0"
+      }`}
+    >
       <div className="mx-auto flex max-w-7xl items-center justify-between gap-4 px-6 pt-3 pb-[calc(0.75rem+env(safe-area-inset-bottom))] sm:px-8">
         <div className="min-w-0">
           <p className={`truncate text-sm font-semibold leading-tight ${statusClass}`}>

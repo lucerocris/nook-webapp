@@ -7,6 +7,8 @@ import type { Tag } from "@/lib/data/cafes-mappers";
 import { getTagIcon } from "@/lib/utils/tag-icon";
 
 const PREVIEW = 8;
+/** Up to this many tags, everything shows inline, grouped; past it, a preview and the dialog. */
+const INLINE_ALL = 12;
 
 type Group = { title: string; items: Tag[] };
 
@@ -30,8 +32,8 @@ export default function CafeAmenities({
   const titleId = useId();
 
   const groups: Group[] = [
+    { title: "Good for", items: bestFor },
     { title: "Amenities", items: amenities },
-    { title: "Best for", items: bestFor },
     { title: "Payment", items: payment },
   ].filter((g) => g.items.length > 0);
 
@@ -59,6 +61,35 @@ export default function CafeAmenities({
     return <p className="text-sm text-muted">No amenities listed yet.</p>;
   }
 
+  // A short list is read faster grouped and whole than as a preview with a
+  // "Show all" behind it, which hid payment options on most cafes.
+  if (total <= INLINE_ALL) {
+    return (
+      <div className="space-y-6">
+        {groups.map((group) => (
+          <section key={group.title}>
+            <h3 className="text-sm font-semibold text-ink">{group.title}</h3>
+            <ul className="mt-3 flex flex-wrap gap-2">
+              {group.items.map((tag) => (
+                <li
+                  key={tag.id}
+                  className="inline-flex h-9 items-center gap-2 rounded-full border border-line px-3.5 text-[14px] text-body"
+                >
+                  {createElement(getTagIcon(tag.name), {
+                    size: 17,
+                    className: "shrink-0 text-fern",
+                    "aria-hidden": true,
+                  })}
+                  {tag.name}
+                </li>
+              ))}
+            </ul>
+          </section>
+        ))}
+      </div>
+    );
+  }
+
   return (
     <div>
       <ul className="grid grid-cols-1 gap-x-8 gap-y-4 min-[420px]:grid-cols-2">
@@ -78,7 +109,7 @@ export default function CafeAmenities({
         <button
           type="button"
           onClick={() => setIsOpen(true)}
-          className="mt-7 inline-flex h-11 items-center rounded-full border border-ink px-5 text-sm font-semibold text-ink transition-colors hover:bg-paper focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand"
+          className="mt-7 inline-flex h-11 items-center rounded-full border border-brand px-5 text-sm font-semibold text-brand transition-colors hover:bg-brand-soft focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand"
         >
           Show all {total}
         </button>

@@ -4,12 +4,11 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 
 import BackButton from "@/app/components/BackButton";
-import ShareButton from "@/app/components/ShareButton";
 import CafeDetailSkeleton from "@/app/components/CafeDetailSkeleton";
 import CafeGallery from "@/app/components/CafeGallery";
 import CafeStickyBar from "@/app/components/CafeStickyBar";
 import CafeAmenities from "@/app/components/cafe/CafeAmenities";
-import CafeHeading from "@/app/components/cafe/CafeHeading";
+import CafeTitle from "@/app/components/cafe/CafeTitle";
 import CafeInfoPanel from "@/app/components/cafe/CafeInfoPanel";
 import CafeLocation from "@/app/components/cafe/CafeLocation";
 import CafeReviews from "@/app/components/cafe/CafeReviews";
@@ -121,20 +120,29 @@ async function CafeDetailContent({ params }: Props) {
   // Cuenco Ave, Mabolo, Cebu City, 6000 Cebu"), so appending them unconditionally
   // rendered "…6000 Cebu, Mabolo, Cebu City" — a repeat that costs two lines on
   // a phone. Only add a part the address doesn't already mention.
+  // An address that already names the city ("…Soong Rd, Lapu-Lapu, Cebu")
+  // is complete; adding the neighbourhood and city after it only repeats them
+  // in the wrong order.
+  const addressNamesCity =
+    typeof cafe.city === "string" &&
+    typeof cafe.address === "string" &&
+    cafe.address.toLowerCase().includes(cafe.city.toLowerCase().replace(/\s+city$/, ""));
   const addressParts: string[] = [];
   for (const part of [cafe.address, cafe.neighborhood, cafe.city]) {
     if (typeof part !== "string" || part.length === 0) continue;
+    // "Lapu-Lapu City" is already said by an address ending "Lapu-Lapu,
+    // Cebu", so compare without a trailing "City".
+    const bare = part.toLowerCase().replace(/\s+city$/, "");
     const alreadyPresent = addressParts.some((existing) =>
-      existing.toLowerCase().includes(part.toLowerCase()),
+      existing.toLowerCase().includes(bare),
     );
     if (!alreadyPresent) addressParts.push(part);
   }
-  const fullAddress = addressParts.join(", ") || cafe.address;
+  const fullAddress = addressNamesCity ? cafe.address : addressParts.join(", ") || cafe.address;
   const area = [cafe.neighborhood, cafe.city].filter(Boolean).join(", ");
   const mapsUrl = `https://www.google.com/maps/dir/?api=1&destination=${cafe.lat},${cafe.lng}`;
   const links = parseSocialLinks(cafe.socialLinks);
   const tabs = [
-    { id: "overview", label: "Overview" },
     { id: "offers", label: "What it offers" },
     { id: "menu", label: "Menu" },
     { id: "hours", label: "Hours & location" },
@@ -153,27 +161,25 @@ async function CafeDetailContent({ params }: Props) {
         }`}
       >
         <div className="mx-auto w-full max-w-7xl px-4 sm:px-8">
-          {/* Photos lead on a phone; on desktop the title row comes first with
-              the mosaic under it. Same markup, reordered by flex. */}
-          <div className="flex flex-col gap-5 lg:gap-6">
-            <header className="order-2 flex items-end justify-between gap-4 lg:order-1">
-              <div className="min-w-0">
-                <h1 className="text-[1.75rem] font-semibold leading-tight tracking-[-0.02em] text-ink sm:text-[2rem]">
-                  {cafe.name}
-                </h1>
-              </div>
-              {/* Below `lg` share rides on the photo alongside the back button. */}
-              <div className="hidden shrink-0 lg:block">
-                <ShareButton
-                  title={cafe.name}
-                  text={`${cafe.name} on Nook — cafes in Cebu`}
-                  label="Share"
-                />
-              </div>
+          {/* Photos lead on a phone, with the title block under them. On
+              desktop the two sit side by side, so the first screen shows the
+              place and whether to go together. */}
+          <div className="flex flex-col gap-5 lg:grid lg:grid-cols-[minmax(0,1.2fr)_minmax(0,1fr)] lg:items-start lg:gap-10">
+            <header className="order-2 lg:order-2 lg:pt-1">
+              <CafeTitle
+                name={cafe.name}
+                area={area}
+                hours={operatingHours}
+                rating={cafe.rating}
+                reviewCount={cafe.reviewCount}
+                tags={cafe.tags}
+                mapsUrl={mapsUrl}
+                description={cafe.description}
+              />
             </header>
 
             {gallery.length > 0 ? (
-              <div className="order-1 lg:order-2">
+              <div className="order-1 lg:order-1">
                 <CafeGallery cafeName={cafe.name} images={gallery} />
               </div>
             ) : (
@@ -184,17 +190,7 @@ async function CafeDetailContent({ params }: Props) {
           <SectionTabs tabs={tabs} />
 
           <div className="mt-8 grid gap-10 lg:mt-10 lg:grid-cols-[minmax(0,1fr)_360px] lg:gap-16">
-            <div className="min-w-0 divide-y divide-line [&>section]:scroll-mt-32 [&>section]:py-10 [&>section:first-child]:pt-0">
-              <section id="overview">
-                <h2 className="sr-only">Overview</h2>
-                <CafeHeading
-                  area={area}
-                  rating={cafe.rating}
-                  reviewCount={cafe.reviewCount}
-                  tags={cafe.tags}
-                  description={cafe.description}
-                />
-              </section>
+            <div className="min-w-0 divide-y divide-line [&>section]:scroll-mt-32 [&>section]:py-10 [&>section:first-child]:pt-0 [&>section:last-child]:pb-0">
 
               <section id="offers">
                 <SectionTitle>What this cafe offers</SectionTitle>
@@ -236,8 +232,16 @@ async function CafeDetailContent({ params }: Props) {
                     <p className="mt-3 text-sm text-muted">
                       {menu.length > 0
                         ? `No picks yet. The full menu has ${menu.length} ${menu.length === 1 ? "item" : "items"}.`
-                        : "No menu listed yet."}
+                        : "No menu listed yet. Cafes add their menu and prices on Nook for Business."}
                     </p>
+                    {menu.length === 0 ? (
+                      <a
+                        href="https://business.nookph.app/claim"
+                        className="mt-3 inline-block text-sm font-semibold text-brand underline-offset-4 hover:underline"
+                      >
+                        Own this cafe? Add your menu
+                      </a>
+                    ) : null}
                   </>
                 )}
               </section>
@@ -279,9 +283,7 @@ async function CafeDetailContent({ params }: Props) {
         </div>
       </main>
 
-      <div className="hidden lg:block">
-        <Footer />
-      </div>
+      <Footer />
 
       <CafeStickyBar
         cafeName={cafe.name}

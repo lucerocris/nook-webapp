@@ -1,5 +1,7 @@
 "use client";
 
+import Link from "next/link";
+
 import { useId, useState } from "react";
 import {
   CaretDown,
@@ -8,12 +10,10 @@ import {
   Globe,
   InstagramLogo,
   MapPin,
-  NavigationArrow,
   TiktokLogo,
   type Icon,
 } from "@phosphor-icons/react";
 
-import ShareButton from "@/app/components/ShareButton";
 import type { OperatingHours } from "@/lib/utils/hours";
 import type { SocialKind, SocialLink } from "@/lib/utils/social";
 import { cn } from "@/lib/utils";
@@ -28,10 +28,13 @@ const SOCIAL_ICON: Record<SocialKind, Icon> = {
 };
 
 /**
- * Sticky side card on desktop (Nextdoor's info card): icon-led rows for the
- * open status, which expands into the week's hours, and the address; then
- * Get directions as the one filled button; then round, captioned buttons for
- * Share and whichever of the cafe's own links exist (Google Maps' row).
+ * Sticky side card on desktop (Fresha's order, minus its button: Get
+ * directions lives under the title): icon-led rows for the open status (expands into the
+ * week's hours) and the address; then the cafe's own links as icon-and-text
+ * rows (ClassPass); then what only the app does, with a way to get it, so the
+ * card ends on something useful instead of empty space. Share lives in the
+ * title block, so it is not repeated here.
+ * References: docs/references/cafe-details/.
  */
 export default function CafeInfoPanel({
   name,
@@ -52,8 +55,9 @@ export default function CafeInfoPanel({
 
   return (
     <div className="rounded-[var(--radius-card)] border border-line bg-white p-5">
+
       <ul className="text-sm text-body">
-        <li className="border-b border-line pb-3">
+        <li className="border-b border-line pb-2">
           {hasHours ? (
             <button
               type="button"
@@ -83,7 +87,7 @@ export default function CafeInfoPanel({
             </div>
           ) : null}
         </li>
-        <li className="flex gap-3 pt-3">
+        <li className="flex gap-3 py-3">
           <MapPin size={18} className="mt-0.5 shrink-0 text-fern" aria-hidden />
           <a
             href={mapsUrl}
@@ -94,43 +98,36 @@ export default function CafeInfoPanel({
             {address}
           </a>
         </li>
-      </ul>
-
-      <a
-        href={mapsUrl}
-        target="_blank"
-        rel="noreferrer"
-        aria-label={`Get directions to ${name} in Google Maps`}
-        className="mt-5 flex h-12 items-center justify-center gap-2 rounded-full bg-brand px-4 text-sm font-semibold text-white transition-colors hover:bg-brand-hover focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand"
-      >
-        <NavigationArrow size={18} weight="fill" aria-hidden />
-        Get directions
-      </a>
-
-      <ul className="mt-5 flex flex-wrap justify-center gap-x-5 gap-y-3">
-        <li className="flex w-14 flex-col items-center gap-1.5">
-          <ShareButton title={name} text={`${name} on Nook — cafes in Cebu`} className="size-11" />
-          <span className="text-xs text-body">Share</span>
-        </li>
         {links.map((link) => {
           const LinkIcon = SOCIAL_ICON[link.kind];
           return (
-            <li key={link.kind} className="w-14">
+            <li key={link.kind} className="border-t border-line">
               <a
                 href={link.url}
                 target="_blank"
                 rel="noreferrer"
-                className="group flex flex-col items-center gap-1.5 focus-visible:outline-none"
+                className="flex min-h-11 items-center gap-3 underline-offset-4 hover:text-ink hover:underline focus-visible:outline-2 focus-visible:outline-brand"
               >
-                <span className="flex size-11 items-center justify-center rounded-full border border-line text-ink transition-colors group-hover:bg-paper group-focus-visible:outline-2 group-focus-visible:outline-brand">
-                  <LinkIcon size={18} aria-hidden />
-                </span>
-                <span className="text-xs text-body">{link.label}</span>
+                <LinkIcon size={18} className="shrink-0 text-fern" aria-hidden />
+                {link.label}
               </a>
             </li>
           );
         })}
       </ul>
+
+      <div className="mt-4 rounded-2xl bg-paper p-4">
+        <p className="text-sm font-semibold text-ink">In the Nook app</p>
+        <p className="mt-1 text-sm leading-relaxed text-body">
+          Save {name}, mark it as been or want to try, and write a review.
+        </p>
+        <Link
+          href="/download-app"
+          className="mt-3 inline-flex h-10 items-center rounded-full border border-brand bg-white px-4 text-sm font-semibold text-brand transition-colors hover:bg-brand-soft focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand"
+        >
+          Get the app
+        </Link>
+      </div>
     </div>
   );
 }
