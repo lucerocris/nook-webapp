@@ -4,6 +4,7 @@ import { notFound } from "next/navigation";
 import type { Metadata } from "next";
 
 import CafeDetailSkeleton from "@/app/components/CafeDetailSkeleton";
+import MenuCategoryNav from "@/app/components/cafe/MenuCategoryNav";
 import { getCafeById, getMenuItems } from "@/lib/data/cafes";
 import { formatPrice } from "@/lib/utils/format";
 import { SITE_URL as siteUrl } from "@/lib/env";
@@ -46,98 +47,112 @@ async function CafeMenuRender({ params }: Props) {
     notFound();
   }
 
-  const highlights = items.filter((item) => item.isHighlight);
   const sections = groupByCategory(items);
+  const categories = sections.map((section) => ({
+    key: section.key,
+    title: section.title,
+    count: section.items.length,
+  }));
 
   return (
-    <main className="mx-auto mt-20 mb-16 w-full max-w-5xl px-6">
-      <h1 className="text-4xl font-semibold text-[#2f2f2f]">Menu</h1>
+    <>
+      <main className="mx-auto w-full max-w-6xl flex-1 px-4 pt-24 pb-16 sm:px-8">
+        <p className="text-sm text-muted">{cafe.name}</p>
+        <h1 className="mt-1 text-[1.75rem] font-semibold tracking-[-0.02em] text-ink sm:text-[2rem]">
+          Menu
+        </h1>
 
-      {items.length === 0 ? (
-        <p className="mt-6 text-sm text-zinc-500">No menu items listed yet.</p>
-      ) : null}
+        {items.length === 0 ? (
+          <p className="mt-10 border-y border-line py-12 text-center text-sm text-muted">
+            This cafe hasn&apos;t listed its menu yet.
+          </p>
+        ) : (
+          <div className="mt-6 lg:mt-10 lg:grid lg:grid-cols-[200px_minmax(0,1fr)] lg:gap-12">
+            <MenuCategoryNav categories={categories} />
 
-      {highlights.length > 0 ? (
-        <ul className="mt-8 grid grid-cols-2 gap-x-6 gap-y-8 sm:grid-cols-3 lg:grid-cols-5">
-          {highlights.map((item) => (
-            <li key={item.id}>
-              <HighlightThumbnail item={item} />
-              <h2 className="mt-3 text-base font-semibold text-[#101514]">
-                {item.name}
-              </h2>
-              <p className="mt-1 text-sm text-[#6b6b6b]">
-                {formatPrice(displayPrice(item))}
-              </p>
-            </li>
-          ))}
-        </ul>
-      ) : null}
+            <div className="min-w-0">
+              {sections.map((section) => (
+                <section
+                  key={section.key}
+                  id={`cat-${section.key}`}
+                  className="scroll-mt-32 pt-8 first:pt-6 lg:scroll-mt-24 lg:first:pt-0"
+                >
+                  <h2 className="text-lg font-semibold tracking-[-0.01em] text-ink">
+                    {section.title}
+                  </h2>
+                  <p className="text-sm text-muted">
+                    {section.items.length} {section.items.length === 1 ? "item" : "items"}
+                  </p>
 
-      {sections.map((section, index) => (
-        <section key={section.key} className={index === 0 ? "mt-12" : "mt-10"}>
-          <h2 className="text-lg font-semibold text-[#101514]">
-            {section.title}
-          </h2>
-
-          <ul className="mt-3">
-            {section.items.map((item) => (
-              <li
-                key={item.id}
-                className="flex items-start justify-between gap-6 border-b border-black/8 py-4 last:border-b-0"
-              >
-                <div className="min-w-0">
-                  <h3 className="text-sm font-semibold text-[#101514]">
-                    {item.name}
-                  </h3>
-                  {item.description ? (
-                    <p className="mt-1 text-xs leading-5 text-[#6b6b6b]">
-                      {item.description}
-                    </p>
-                  ) : null}
-                  {item.variants.length > 0 ? (
-                    <p className="mt-2 text-xs text-[#6b6b6b]">
-                      {sortedVariants(item)
-                        .map(
-                          (variant) =>
-                            `${variant.label} ${formatPrice(
-                              variantPrice(item, variant),
-                            )}`,
-                        )
-                        .join(" · ")}
-                    </p>
-                  ) : null}
-                </div>
-
-                <p className="shrink-0 text-sm font-semibold text-[#101514]">
-                  {formatPrice(displayPrice(item))}
-                </p>
-              </li>
-            ))}
-          </ul>
-        </section>
-      ))}
-    </main>
+                  <ul className="mt-4 grid gap-3 md:grid-cols-2">
+                    {section.items.map((item) => (
+                      <li key={item.id}>
+                        <MenuItemCard item={item} />
+                      </li>
+                    ))}
+                  </ul>
+                </section>
+              ))}
+            </div>
+          </div>
+        )}
+      </main>
+    </>
   );
 }
 
-function HighlightThumbnail({ item }: { item: MenuItem }) {
-  if (!item.imageUrl) {
-    return (
-      <div className="flex aspect-[1.55/1] items-center justify-center rounded-xl bg-zinc-100 px-2 text-center text-xs text-zinc-400">
-        {item.name}
-      </div>
-    );
-  }
+/** Text-first card: name (with a Highlight tag when flagged), description,
+ * sizes as label + price pairs, and a square photo on the right only when the
+ * item has one. Cards without a photo keep the same minimum height. */
+function MenuItemCard({ item }: { item: MenuItem }) {
+  const variants = sortedVariants(item);
   return (
-    <div className="relative aspect-[1.55/1] overflow-hidden rounded-xl bg-zinc-100">
-      <Image
-        src={item.imageUrl}
-        alt={item.name}
-        fill
-        sizes="(min-width: 1024px) 20vw, (min-width: 640px) 33vw, 50vw"
-        className="object-cover"
-      />
-    </div>
+    <article className="flex h-full min-h-[7.5rem] gap-4 rounded-2xl border border-line p-4">
+      <div className="flex min-w-0 flex-1 flex-col">
+        <h3 className="flex flex-wrap items-center gap-x-2 gap-y-1 text-sm font-semibold text-ink">
+          {item.name}
+          {item.isHighlight ? (
+            <span className="rounded-full bg-brand-soft px-2 py-0.5 text-[11px] font-semibold text-brand">
+              Highlight
+            </span>
+          ) : null}
+        </h3>
+        {item.description ? (
+          <p className="mt-1 line-clamp-2 text-xs leading-5 text-muted">
+            {item.description}
+          </p>
+        ) : null}
+        <div className="mt-auto pt-3">
+          {variants.length > 1 ? (
+            <dl className="flex flex-wrap gap-x-4 gap-y-1 text-sm">
+              {variants.map((variant) => (
+                <div key={variant.id} className="flex gap-1.5">
+                  <dt className="text-muted">{variant.label}</dt>
+                  <dd className="font-medium text-ink">
+                    {formatPrice(variantPrice(item, variant))}
+                  </dd>
+                </div>
+              ))}
+            </dl>
+          ) : (
+            <p className="text-sm font-medium text-ink">
+              {formatPrice(displayPrice(item))}
+            </p>
+          )}
+        </div>
+      </div>
+      {item.imageUrl ? (
+        <div className="relative size-24 shrink-0 overflow-hidden rounded-xl bg-subtle sm:size-28">
+          <Image
+            src={item.imageUrl}
+            alt={item.name}
+            fill
+            sizes="112px"
+            className="object-cover"
+          />
+        </div>
+      ) : null}
+    </article>
   );
 }
 

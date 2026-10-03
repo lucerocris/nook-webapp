@@ -3,42 +3,44 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { CaretLeft, CaretRight } from "@phosphor-icons/react";
 
+import { cn } from "@/lib/utils";
+
 type Props = {
   children: React.ReactNode;
   /** Tailwind gap utility for the track (must match the child width math). */
   gapClass?: string;
   ariaLabel?: string;
+  /** Left side of the header row. When given, the prev/next buttons sit at
+   * the right end of that row as a pair, instead of floating on the track. */
+  header?: React.ReactNode;
+  /** Extra controls placed before the arrow pair, e.g. a "See all" link. */
+  actions?: React.ReactNode;
+  /** Let the track run to the viewport edge on phones so the next card peeks. */
+  bleed?: boolean;
 };
 
-// A horizontal, snap-scrolling track with left/right arrow buttons. The buttons
-// are always visible (no hover needed): the left one only appears once you have
-// scrolled away from the start, the right one only while more content remains.
-// Each button's center is aligned to the edge of the first/last visible card
-// and vertically centered on the card's image.
+/**
+ * A snap-scrolling horizontal track with a prev/next pair. Each button is
+ * disabled (not hidden) at its end of the track, so the pair never jumps.
+ * On touch screens the arrows are hidden and the row is swiped.
+ */
 export default function HorizontalScroller({
   children,
   gapClass = "gap-4",
   ariaLabel = "items",
+  header,
+  actions,
+  bleed = false,
 }: Props) {
   const trackRef = useRef<HTMLDivElement | null>(null);
   const [canScrollLeft, setCanScrollLeft] = useState(false);
   const [canScrollRight, setCanScrollRight] = useState(false);
-  // Vertical center of the first card's image, relative to the track top.
-  const [mediaCenter, setMediaCenter] = useState<number | null>(null);
 
   const update = useCallback(() => {
     const el = trackRef.current;
     if (!el) return;
     setCanScrollLeft(el.scrollLeft > 8);
     setCanScrollRight(el.scrollLeft + el.clientWidth < el.scrollWidth - 8);
-
-    // Align the buttons with the vertical middle of the card's image.
-    const media = el.querySelector("img");
-    if (media) {
-      const trackRect = el.getBoundingClientRect();
-      const mediaRect = media.getBoundingClientRect();
-      setMediaCenter(mediaRect.top - trackRect.top + mediaRect.height / 2);
-    }
   }, []);
 
   useEffect(() => {
@@ -56,81 +58,75 @@ export default function HorizontalScroller({
   const scrollByPage = useCallback((direction: 1 | -1) => {
     const el = trackRef.current;
     if (!el) return;
-    el.scrollBy({ left: direction * el.clientWidth, behavior: "smooth" });
+    el.scrollBy({ left: direction * el.clientWidth * 0.9, behavior: "smooth" });
   }, []);
 
-  // Fall back to the vertical middle of the track until the image is measured.
-  const topStyle =
-    mediaCenter != null
-      ? { top: `${mediaCenter}px` }
-      : { top: "50%" as const };
+  const scrollable = canScrollLeft || canScrollRight;
 
   return (
-    <div className="relative">
+    <div>
+      {header || actions ? (
+        <div className="flex items-end justify-between gap-4">
+          <div className="min-w-0">{header}</div>
+          <div className="flex shrink-0 items-center gap-3">
+            {actions}
+            {scrollable ? (
+              <div className="hidden items-center gap-2 md:flex">
+                <ArrowButton
+                  label={`Scroll ${ariaLabel} left`}
+                  disabled={!canScrollLeft}
+                  onClick={() => scrollByPage(-1)}
+                >
+                  <CaretLeft size={14} weight="bold" />
+                </ArrowButton>
+                <ArrowButton
+                  label={`Scroll ${ariaLabel} right`}
+                  disabled={!canScrollRight}
+                  onClick={() => scrollByPage(1)}
+                >
+                  <CaretRight size={14} weight="bold" />
+                </ArrowButton>
+              </div>
+            ) : null}
+          </div>
+        </div>
+      ) : null}
+
       <div
         ref={trackRef}
-        className={[
-          "flex snap-x snap-mandatory overflow-x-auto scroll-smooth pb-2",
-          "[-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden",
+        className={cn(
+          "no-scrollbar flex snap-x snap-mandatory overflow-x-auto scroll-smooth pb-1",
+          header || actions ? "mt-4 sm:mt-5" : "",
+          bleed && "-mx-4 scroll-px-4 px-4 sm:mx-0 sm:scroll-px-0 sm:px-0",
           gapClass,
-        ].join(" ")}
+        )}
       >
         {children}
       </div>
-
-      {canScrollLeft ? (
-        <ScrollButton
-          direction="left"
-          style={topStyle}
-          onClick={() => scrollByPage(-1)}
-          aria-label={`Scroll ${ariaLabel} left`}
-        />
-      ) : null}
-      {canScrollRight ? (
-        <ScrollButton
-          direction="right"
-          style={topStyle}
-          onClick={() => scrollByPage(1)}
-          aria-label={`Scroll ${ariaLabel} right`}
-        />
-      ) : null}
     </div>
   );
 }
 
-function ScrollButton({
-  direction,
-  style,
+function ArrowButton({
+  label,
+  disabled,
   onClick,
-  "aria-label": ariaLabel,
+  children,
 }: {
-  direction: "left" | "right";
-  style: React.CSSProperties;
+  label: string;
+  disabled: boolean;
   onClick: () => void;
-  "aria-label": string;
+  children: React.ReactNode;
 }) {
-  const isLeft = direction === "left";
   return (
     <button
       type="button"
       onClick={onClick}
-      aria-label={ariaLabel}
-      style={style}
-      className={[
-        "absolute z-10 flex h-10 w-10 items-center justify-center",
-        "rounded-full border border-zinc-200 bg-white text-[#3b3b3b] shadow-md transition",
-        "hover:bg-zinc-50",
-        // Center the button on the first/last card edge and on the image.
-        isLeft
-          ? "left-0 -translate-x-1/2 -translate-y-1/2"
-          : "right-0 translate-x-1/2 -translate-y-1/2",
-      ].join(" ")}
+      disabled={disabled}
+      aria-label={label}
+      className="flex size-8 items-center justify-center rounded-full border border-line bg-white text-ink transition hover:border-line-strong disabled:cursor-default disabled:text-line-strong disabled:hover:border-line"
     >
-      {isLeft ? (
-        <CaretLeft size={18} weight="bold" />
-      ) : (
-        <CaretRight size={18} weight="bold" />
-      )}
+      {children}
     </button>
   );
 }

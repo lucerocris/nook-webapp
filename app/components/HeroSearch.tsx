@@ -10,7 +10,9 @@ import {
   useState,
   useTransition,
 } from "react";
-import { X } from "@phosphor-icons/react";
+import { MagnifyingGlass, Sparkle, X } from "@phosphor-icons/react";
+
+import { cn } from "@/lib/utils";
 
 import AskAIPanel from "./AskAIPanel";
 import SearchDropdown, { type SearchTab } from "./SearchDropdown";
@@ -144,71 +146,53 @@ export default function HeroSearch({
 
   // The AI panel and the search dropdown occupy the same slot — never both.
   const showPanel = open && !askAiOpen;
+  const isNav = variant === "nav";
   const placeholder =
     variant === "nav"
       ? "Search cafes, tags, or areas..."
-      : "Search 'Specialty Coffee', 'IT Park', or a cafe name...";
+      : "Try “quiet cafe with outlets in IT Park”";
 
   return (
     <div
       ref={containerRef}
-      className={variant === "nav" ? "relative w-full" : "relative mt-6 w-full"}
+      className="relative w-full"
     >
       <form
         onSubmit={handleSubmit}
-        /* The input suppresses its own outline for the pill look, so the visible
-           focus indicator lives on this wrapper via :focus-within — without it
-           the app's primary control had no focus state at all (WCAG 2.4.7). */
-        /* Stacked below `sm`. Side by side, the two shrink-0 buttons claimed
-           165px of a ~272px pill, leaving less than the input's 128px floor —
-           so it wrapped inside this flex-wrap row and the placeholder rendered
-           underneath the Ask AI button (60px of overlap at 320, 20px at 360).
-           On its own row the field gets the full width instead of a sliver. */
-        className="flex w-full flex-col gap-2 rounded-3xl border border-zinc-200 bg-white p-2 transition-shadow focus-within:border-[#3A5A40] focus-within:ring-2 focus-within:ring-[#3A5A40]/40 sm:flex-row sm:items-center sm:rounded-full"
+        /* The input suppresses its own outline, so the visible focus
+           indicator lives on this wrapper via :focus-within (WCAG 2.4.7).
+           One row at every width: below `sm` the two actions shrink to icon
+           buttons instead of stacking, so the field keeps most of the pill. */
+        className={cn(
+          "flex w-full items-center gap-1.5 rounded-full border bg-white transition-shadow focus-within:border-brand focus-within:ring-4 focus-within:ring-brand/15",
+          /* Hero: the page's one loud moment (design.md), so it alone carries
+             the soft shadow; the submit is a green pill inside its right end. */
+          isNav
+            ? "h-11 border-line-strong pl-4 pr-1"
+            : "h-14 border-line pl-5 pr-1.5 shadow-raise sm:h-16 sm:pr-2",
+        )}
         role="search"
       >
-        <div className="flex min-w-0 flex-1 flex-wrap items-center gap-2 pl-3">
-          <span className="flex h-5 w-5 shrink-0 items-center justify-center text-[#3b3b3b]">
-            <svg
-              width="20"
-              height="20"
-              viewBox="0 0 20 20"
-              fill="none"
-              xmlns="http://www.w3.org/2000/svg"
-              aria-hidden="true"
-            >
-              <circle
-                cx="9"
-                cy="9"
-                r="6.25"
-                stroke="currentColor"
-                strokeWidth="1.8"
-              />
-              <line
-                x1="13.5"
-                y1="13.5"
-                x2="17.5"
-                y2="17.5"
-                stroke="currentColor"
-                strokeWidth="1.8"
-                strokeLinecap="round"
-              />
-            </svg>
-          </span>
+        <MagnifyingGlass
+          size={isNav ? 16 : 20}
+          className="shrink-0 text-muted"
+          aria-hidden
+        />
 
+        <div className="no-scrollbar flex min-w-0 flex-1 items-center gap-1.5 overflow-x-auto">
           {selectedTags.map((tag) => (
             <span
               key={tag}
-              className="flex shrink-0 items-center gap-1 rounded-full bg-[#e3ebe4] py-1 pl-3 pr-1.5 text-sm font-medium text-[#3A5A40]"
+              className="flex shrink-0 items-center gap-1 rounded-full bg-brand-soft py-1 pl-2.5 pr-1 text-xs font-medium text-brand"
             >
               {tag}
               <button
                 type="button"
                 onClick={() => removeTag(tag)}
                 aria-label={`Remove ${tag}`}
-                className="flex h-4 w-4 items-center justify-center rounded-full text-[#3A5A40] transition-colors hover:bg-[#3A5A40]/15"
+                className="flex size-4 items-center justify-center rounded-full transition-colors hover:bg-brand/15"
               >
-                <X size={12} weight="bold" />
+                <X size={10} weight="bold" />
               </button>
             </span>
           ))}
@@ -226,11 +210,9 @@ export default function HeroSearch({
             onFocus={() => setOpen(true)}
             onKeyDown={handleKeyDown}
             placeholder={selectedTags.length > 0 ? "Add more..." : placeholder}
-            /* `text-base` below `sm` is not cosmetic: iOS Safari zooms the
-               whole viewport when a focused input is under 16px. `py-2.5`
-               takes the field from a 20px-tall hit target to 44px. The 8rem
-               floor only applies once there is room for it. */
-            className="min-w-0 flex-1 bg-transparent py-2.5 text-base text-[#3b3b3b] placeholder:text-zinc-400 outline-none focus:ring-0 sm:min-w-[8rem] sm:py-3 sm:text-sm"
+            /* 16px below `sm`: iOS Safari zooms the viewport when a focused
+               input is smaller. */
+            className="h-full min-w-[6rem] flex-1 bg-transparent text-base text-ink outline-none placeholder:text-muted focus:ring-0 sm:text-[15px]"
             autoComplete="off"
             role="combobox"
             aria-expanded={showPanel}
@@ -239,30 +221,33 @@ export default function HeroSearch({
           />
         </div>
 
-        {/* Full width on their own row below `sm`, each taking half; back to
-            intrinsic width alongside the field from `sm` up. */}
-        <div className="flex w-full shrink-0 items-center gap-2 sm:w-auto">
-          {variant === "hero" ? (
-            <button
-              type="button"
-              onClick={() => {
-                setAiSeed(q);
-                setAskAiOpen(true);
-                setOpen(false);
-              }}
-              aria-expanded={askAiOpen}
-              className="flex h-11 flex-1 items-center justify-center rounded-full border border-zinc-300 bg-transparent px-4 text-sm font-medium text-[#3b3b3b] transition-colors hover:bg-zinc-50 sm:flex-none"
-            >
-              Ask AI
-            </button>
-          ) : null}
+        {!isNav ? (
           <button
-            type="submit"
-            className="flex h-11 flex-1 items-center justify-center rounded-full bg-[#3A5A40] px-5 text-sm font-medium text-white transition-colors hover:bg-[#2f4833] sm:flex-none"
+            type="button"
+            onClick={() => {
+              setAiSeed(q);
+              setAskAiOpen(true);
+              setOpen(false);
+            }}
+            aria-expanded={askAiOpen}
+            aria-label="Ask AI"
+            className="flex size-11 shrink-0 items-center justify-center gap-1.5 rounded-full text-sm font-medium text-ink transition-colors hover:bg-paper focus-visible:outline-2 focus-visible:outline-brand sm:h-12 sm:w-auto sm:px-4"
           >
-            Search
+            <Sparkle size={18} weight="fill" className="text-brand" />
+            <span className="hidden sm:inline">Ask AI</span>
           </button>
-        </div>
+        ) : null}
+        <button
+          type="submit"
+          aria-label="Search"
+          className={cn(
+            "flex shrink-0 items-center justify-center bg-brand text-sm font-medium text-white transition-colors hover:bg-brand-hover focus-visible:bg-brand-hover",
+            isNav ? "size-9 rounded-full" : "size-11 rounded-full sm:h-12 sm:w-auto sm:px-6",
+          )}
+        >
+          <MagnifyingGlass size={18} weight="bold" className={isNav ? "" : "sm:hidden"} />
+          {!isNav ? <span className="hidden sm:inline">Search</span> : null}
+        </button>
       </form>
 
       {askAiOpen ? (

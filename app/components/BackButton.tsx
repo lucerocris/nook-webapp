@@ -37,7 +37,7 @@ export default function BackButton({ className }: Props) {
       className={cn(
         "flex h-11 w-11 items-center justify-center rounded-full border border-black/5",
         // Legible over a photo or over the page background either way.
-        "bg-white/90 text-[#101514] shadow-sm backdrop-blur transition-colors hover:bg-white",
+        "bg-white/90 text-ink shadow-sm backdrop-blur transition-colors hover:bg-white",
         className,
       )}
     >

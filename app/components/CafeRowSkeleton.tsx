@@ -1,27 +1,19 @@
-function SkeletonCard() {
-  return (
-    <div className="flex flex-col overflow-hidden rounded-2xl bg-white">
-      <div className="aspect-[4/3] w-full animate-pulse rounded-xl bg-zinc-100" />
-      <div className="mt-3 h-4 w-2/3 animate-pulse rounded bg-zinc-100" />
-      <div className="mt-2 h-3 w-1/2 animate-pulse rounded bg-zinc-100" />
-      <div className="mt-3 h-3 w-full animate-pulse rounded bg-zinc-100" />
-    </div>
-  );
-}
+const SHOW_FROM = ["block", "hidden sm:block", "hidden md:block", "hidden lg:block", "hidden xl:block"];
 
-type Props = {
-  title: string;
-  columns?: number;
-};
-
-export default function CafeRowSkeleton({ title, columns = 4 }: Props) {
+/** Same spacing and card widths as CafeShelf, so nothing moves when the real
+ * shelf streams in. */
+export default function CafeRowSkeleton({ title }: { title: string }) {
   return (
-    <section className="py-8 sm:py-10">
-      <div className="mx-auto w-full max-w-7xl px-6 sm:px-8">
-        <h2 className="text-xl font-semibold text-[#3b3b3b]">{title}</h2>
-        <div className="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
-          {Array.from({ length: columns }).map((_, index) => (
-            <SkeletonCard key={index} />
+    <section className="pt-10 sm:pt-14" aria-busy="true">
+      <div className="mx-auto w-full max-w-7xl px-4 sm:px-8">
+        <h2 className="text-xl font-semibold tracking-[-0.02em] text-ink sm:text-[22px]">{title}</h2>
+        <div aria-hidden="true" className="mt-4 grid grid-cols-1 gap-4 sm:mt-5 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 lg:gap-5 xl:grid-cols-5">
+          {SHOW_FROM.map((cls, i) => (
+            <div key={i} className={cls}>
+              <div className="aspect-[5/4] w-full animate-pulse rounded-[20px] bg-paper" />
+              <div className="mt-3 h-4 w-2/3 animate-pulse rounded bg-paper" />
+              <div className="mt-2 h-3.5 w-1/2 animate-pulse rounded bg-paper" />
+            </div>
           ))}
         </div>
       </div>

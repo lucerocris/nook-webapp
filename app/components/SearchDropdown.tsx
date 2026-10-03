@@ -4,7 +4,6 @@ import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useRef, useState } from "react";
 
 import SearchResultRow from "./SearchResultRow";
-import LoadingDots from "./LoadingDots";
 import type { CafeSummary } from "@/lib/data/cafes-mappers";
 import type { SearchTags } from "@/lib/data/search";
 
@@ -48,10 +47,10 @@ function TabPill({
       type="button"
       onClick={onClick}
       className={[
-        "shrink-0 rounded-full border px-4 py-1.5 text-sm font-medium transition-colors",
+        "shrink-0 rounded-full border px-3 py-1 text-[13px] font-medium transition-colors",
         active
-          ? "border-zinc-900 bg-zinc-900 text-white"
-          : "border-zinc-300 bg-transparent text-[#3b3b3b] hover:bg-zinc-50",
+          ? "border-ink bg-ink text-white"
+          : "border-line bg-white text-body hover:border-line-strong",
       ].join(" ")}
       aria-pressed={active}
     >
@@ -60,7 +59,7 @@ function TabPill({
         <span
           className={[
             "ml-1.5 text-xs",
-            active ? "text-zinc-300" : "text-zinc-500",
+            active ? "text-white/60" : "text-muted",
           ].join(" ")}
         >
           {count}
@@ -78,9 +77,9 @@ function SectionHeader({
   count: number;
 }) {
   return (
-    <h3 className="text-left text-base font-semibold text-[#101514] px-2">
+    <h3 className="px-2 pb-1 text-left text-xs font-semibold uppercase tracking-[0.06em] text-muted">
       {title}
-      <span className="ml-1.5 text-sm font-medium text-zinc-400">
+      <span className="ml-1.5 font-medium text-muted/70">
         {count}
       </span>
     </h3>
@@ -99,7 +98,7 @@ function SeeMoreButton({
       <button
         type="button"
         onClick={onClick}
-        className="text-left text-sm font-medium text-[#3A5A40] transition-colors hover:text-[#2f4833] hover:underline"
+        className="text-left text-sm font-medium text-brand transition-colors hover:text-brand-hover hover:underline"
       >
         {label}
       </button>
@@ -109,7 +108,7 @@ function SeeMoreButton({
 
 function EmptyHint({ children }: { children: React.ReactNode }) {
   return (
-    <p className="py-2 text-sm text-zinc-500">{children}</p>
+    <p className="px-2 py-2 text-sm text-muted">{children}</p>
   );
 }
 
@@ -177,10 +176,10 @@ export default function SearchDropdown({
   };
 
   return (
-    <div className="overflow-hidden rounded-2xl bg-white shadow-lg ring-1 ring-zinc-200/70">
+    <div className="overflow-hidden rounded-2xl border border-line bg-white text-left shadow-float">
       <div
         className={[
-          "sticky top-0 z-10 flex gap-2 overflow-x-auto border-b border-zinc-100 bg-white px-6 py-6 transition-shadow",
+          "no-scrollbar sticky top-0 z-10 flex gap-1.5 overflow-x-auto border-b border-line bg-white px-4 py-3 transition-shadow",
           scrolled ? "shadow-[0_6px_8px_-6px_rgba(0,0,0,0.12)]" : "",
         ].join(" ")}
       >
@@ -188,6 +187,12 @@ export default function SearchDropdown({
           label="All"
           active={activeTab === "all"}
           onClick={() => onTabChange("all")}
+        />
+        <TabPill
+          label="Cafes"
+          count={counts.cafes}
+          active={activeTab === "cafes"}
+          onClick={() => onTabChange("cafes")}
         />
         <TabPill
           label="Best For"
@@ -201,18 +206,60 @@ export default function SearchDropdown({
           active={activeTab === "amenities"}
           onClick={() => onTabChange("amenities")}
         />
-        <TabPill
-          label="Cafes"
-          count={counts.cafes}
-          active={activeTab === "cafes"}
-          onClick={() => onTabChange("cafes")}
-        />
       </div>
 
       <div
         ref={scrollRef}
-        className="max-h-[60vh] space-y-4 overflow-y-auto px-6 py-6 pt-3"
+        className="max-h-[min(60vh,520px)] space-y-5 overflow-y-auto px-2 py-4 sm:px-3"
       >
+        {showCafes ? (
+          <section>
+            <SectionHeader title="Cafes" count={cafes.length} />
+            {cafesLoading && cafes.length === 0 ? (
+              <ul aria-label="Searching cafes" className="flex flex-col gap-1 px-2 py-1">
+                {[0, 1, 2].map((i) => (
+                  <li key={i} className="flex items-center gap-3 py-1.5">
+                    <span className="size-10 shrink-0 animate-pulse rounded-lg bg-subtle" />
+                    <span className="flex-1 space-y-1.5">
+                      <span className="block h-3 w-2/5 animate-pulse rounded bg-subtle" />
+                      <span className="block h-2.5 w-1/4 animate-pulse rounded bg-subtle" />
+                    </span>
+                  </li>
+                ))}
+              </ul>
+            ) : cafesFailed ? (
+              <EmptyHint>
+                Couldn&apos;t load results — check your connection and try
+                again.
+              </EmptyHint>
+            ) : visibleCafes.length === 0 ? (
+              <EmptyHint>
+                {q ? "No cafes match your search yet." : "No cafes available."}
+              </EmptyHint>
+            ) : (
+              <>
+                <ul className="flex flex-col">
+                  {visibleCafes.map((cafe) => (
+                    <li key={cafe.id}>
+                      <SearchResultRow
+                        kind="cafe"
+                        cafe={cafe}
+                        as="button"
+                        onClick={() => goCafe(cafe.id)}
+                      />
+                    </li>
+                  ))}
+                </ul>
+                {activeTab === "all" && cafesOverflow ? (
+                  <SeeMoreButton
+                    label={`See all ${cafes.length} cafes`}
+                    onClick={() => onTabChange("cafes")}
+                  />
+                ) : null}
+              </>
+            )}
+          </section>
+        ) : null}
         {showBestFor ? (
           <section>
             <SectionHeader title="Best For" count={filteredBestFor.length} />
@@ -275,47 +322,6 @@ export default function SearchDropdown({
           </section>
         ) : null}
 
-        {showCafes ? (
-          <section>
-            <SectionHeader title="Cafes" count={cafes.length} />
-            {cafesLoading && cafes.length === 0 ? (
-              <div className="flex items-center gap-2 py-2 text-sm text-zinc-500">
-                <LoadingDots className="text-[#3A5A40]" label="Searching cafes" />
-                <span>Searching cafes</span>
-              </div>
-            ) : cafesFailed ? (
-              <EmptyHint>
-                Couldn&apos;t load results — check your connection and try
-                again.
-              </EmptyHint>
-            ) : visibleCafes.length === 0 ? (
-              <EmptyHint>
-                {q ? "No cafes match your search yet." : "No cafes available."}
-              </EmptyHint>
-            ) : (
-              <>
-                <ul className="flex flex-col">
-                  {visibleCafes.map((cafe) => (
-                    <li key={cafe.id}>
-                      <SearchResultRow
-                        kind="cafe"
-                        cafe={cafe}
-                        as="button"
-                        onClick={() => goCafe(cafe.id)}
-                      />
-                    </li>
-                  ))}
-                </ul>
-                {activeTab === "all" && cafesOverflow ? (
-                  <SeeMoreButton
-                    label={`See all ${cafes.length} cafes`}
-                    onClick={() => onTabChange("cafes")}
-                  />
-                ) : null}
-              </>
-            )}
-          </section>
-        ) : null}
       </div>
     </div>
   );

@@ -103,6 +103,7 @@ function mapRawCafe(row: RawCafeRow): CafeSummary {
     lat: row.lat,
     lng: row.lng,
     distanceMeters: null,
+    operatingHours: null,
   };
 }
 

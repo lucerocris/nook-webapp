@@ -17,7 +17,7 @@ export default function AuthLayout({
       <div className="w-full max-w-sm">
         <Link
           href="/"
-          className="mb-8 block text-center text-sm text-zinc-500 transition-colors hover:text-zinc-800"
+          className="mb-8 block text-center text-sm text-muted transition-colors hover:text-ink"
         >
           &larr; Back to Nook
         </Link>
