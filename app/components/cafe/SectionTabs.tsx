@@ -11,7 +11,14 @@ export type SectionTab = { id: string; label: string };
  * row under the photos). The section scrolled to is underlined. Plain anchors, so
  * they work without JavaScript and the URL hash says where you are.
  */
-export default function SectionTabs({ tabs }: { tabs: SectionTab[] }) {
+export default function SectionTabs({
+  tabs,
+  className,
+}: {
+  tabs: SectionTab[];
+  /** Overrides, e.g. a pinned offset on pages that keep the navbar on phones. */
+  className?: string;
+}) {
   const [current, setCurrent] = useState(tabs[0]?.id);
 
   // The current section is the last one whose top has passed just under the
@@ -48,7 +55,10 @@ export default function SectionTabs({ tabs }: { tabs: SectionTab[] }) {
   return (
     <nav
       aria-label="Sections"
-      className="sticky top-0 z-30 -mx-4 mt-4 border-b border-line bg-white px-4 sm:-mx-8 sm:px-8 lg:top-16 lg:mx-0 lg:mt-6 lg:px-0"
+      className={cn(
+        "sticky top-0 z-30 -mx-4 mt-4 border-b border-line bg-white px-4 sm:-mx-8 sm:px-8 lg:top-16 lg:mx-0 lg:mt-6 lg:px-0",
+        className,
+      )}
     >
       <ul className="no-scrollbar flex gap-6 overflow-x-auto">
         {tabs.map((tab) => (

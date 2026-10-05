@@ -14,6 +14,8 @@ type Props = {
   className?: string;
   /** Render as a text button ("Share" with the icon) instead of a round icon. */
   label?: string;
+  /** Accessible name; defaults to "Share cafe". */
+  ariaLabel?: string;
 };
 
 type Feedback = "copied" | "failed" | null;
@@ -24,7 +26,13 @@ type Feedback = "copied" | "failed" | null;
  * button that silently does nothing reads as broken, which is exactly what
  * this replaced.
  */
-export default function ShareButton({ title, text, className, label }: Props) {
+export default function ShareButton({
+  title,
+  text,
+  className,
+  label,
+  ariaLabel = "Share cafe",
+}: Props) {
   const [feedback, setFeedback] = useState<Feedback>(null);
   const resetTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -72,7 +80,7 @@ export default function ShareButton({ title, text, className, label }: Props) {
     <div className="relative">
       <button
         type="button"
-        aria-label="Share cafe"
+        aria-label={ariaLabel}
         onClick={share}
         className={cn(
           label

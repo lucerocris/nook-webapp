@@ -178,6 +178,12 @@ export type Database = {
         Args: { p_cafe_id: string };
         Returns: MenuItemRpcRow[];
       };
+      /** nook-supabase migration 20261005120000_public_profile.sql. Null
+       * when the profile is unknown, suspended or hidden from the caller. */
+      get_public_profile: {
+        Args: { p_username?: string | null; p_user_id?: string | null };
+        Returns: PublicProfileRpc | null;
+      };
     };
     Enums: Record<string, never>;
     CompositeTypes: Record<string, never>;
@@ -235,5 +241,48 @@ export type MenuItemRpcRow = {
     price_modifier: number;
     is_default: boolean | null;
     sort_order: number | null;
+  }[];
+};
+
+/** What `get_public_profile` returns. No scores, buckets or anything below
+ * #3 ever arrive here (nook-supabase docs/PUBLIC_PROFILE.md). */
+export type PublicProfileRpc = {
+  user_id: string;
+  username: string;
+  full_name: string | null;
+  avatar_url: string | null;
+  bio: string | null;
+  joined_at: string;
+  highlights_public: boolean;
+  is_self: boolean;
+  counts: { reviews: number; ranked: number | null; cups: number | null };
+  top_cafes: {
+    rank: number;
+    cafe_id: string;
+    name: string;
+    neighborhood: string | null;
+    city: string | null;
+    image_url: string | null;
+  }[];
+  photos: {
+    id: string;
+    cafe_id: string;
+    cafe_name: string;
+    cafe_area: string | null;
+    image_url: string;
+    drink_name: string | null;
+    taken_at: string;
+    pin_order: number | null;
+  }[];
+  reviews: {
+    id: string;
+    cafe_id: string;
+    cafe_name: string;
+    cafe_area: string | null;
+    cafe_image_url: string | null;
+    rating: number;
+    content: string | null;
+    image_urls: string[] | null;
+    created_at: string;
   }[];
 };

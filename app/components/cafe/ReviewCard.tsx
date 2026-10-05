@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import Image from "next/image";
+import Link from "next/link";
 
 import type { Review } from "@/lib/data/cafes-mappers";
 import { cn } from "@/lib/utils";
@@ -35,13 +36,29 @@ export default function ReviewCard({
 
   return (
     <article className={cn(bordered && "rounded-2xl border border-line p-5")}>
-      <div className="flex items-center gap-3">
-        <Avatar name={review.authorName} url={review.authorAvatarUrl} />
-        <div className="min-w-0">
-          <p className="truncate text-sm font-semibold text-ink">{review.authorName}</p>
-          <p className="text-xs text-muted">{date}</p>
+      {review.authorUsername ? (
+        // The author's public profile (/u/<username>), with their top cafes.
+        <Link
+          href={`/u/${review.authorUsername}`}
+          className="group flex w-fit max-w-full items-center gap-3 rounded-lg focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand"
+        >
+          <Avatar name={review.authorName} url={review.authorAvatarUrl} />
+          <div className="min-w-0">
+            <p className="truncate text-sm font-semibold text-ink group-hover:underline group-hover:underline-offset-4">
+              {review.authorName}
+            </p>
+            <p className="text-xs text-muted">{date}</p>
+          </div>
+        </Link>
+      ) : (
+        <div className="flex items-center gap-3">
+          <Avatar name={review.authorName} url={review.authorAvatarUrl} />
+          <div className="min-w-0">
+            <p className="truncate text-sm font-semibold text-ink">{review.authorName}</p>
+            <p className="text-xs text-muted">{date}</p>
+          </div>
         </div>
-      </div>
+      )}
       <div className="mt-3 flex items-center gap-2">
         <RatingStars rating={review.rating} size={12} />
         <span className="sr-only">{review.rating} out of 5</span>
