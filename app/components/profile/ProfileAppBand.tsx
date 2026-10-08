@@ -8,7 +8,13 @@ import StoreBadges from "@/app/components/StoreBadges";
  * a QR beside it on desktop; SoundCloud's badge pair; docs/references/
  * public-profile). No rating or download count: there is no real one to show.
  */
-export default function ProfileAppBand() {
+export default function ProfileAppBand({
+  heading = "Keep your own coffee gallery",
+  body = "Snap your cup at every cafe, review the ones you work from and rank where you have been. Free for iPhone and Android.",
+}: {
+  heading?: string;
+  body?: string;
+} = {}) {
   return (
     <section
       aria-labelledby="get-app"
@@ -25,11 +31,10 @@ export default function ProfileAppBand() {
           </span>
         </div>
         <h2 id="get-app" className="mt-5 text-balance text-xl leading-snug font-semibold tracking-[-0.01em] text-ink sm:text-2xl">
-          Keep your own coffee gallery
+          {heading}
         </h2>
         <p className="mt-2 max-w-[48ch] text-[15px] leading-relaxed text-body">
-          Snap your cup at every cafe, review the ones you work from and rank where you have
-          been. Free for iPhone and Android.
+          {body}
         </p>
         <StoreBadges size="sm" className="mt-5" />
       </div>

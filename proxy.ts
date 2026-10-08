@@ -3,8 +3,30 @@ import { createServerClient } from "@supabase/ssr";
 import type { Database } from "@/lib/supabase/types";
 import { SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY } from "@/lib/env";
 
+/**
+ * `/c/<code>?crew=<invite>` → `/c/<code>/crew/<invite>`, internally. Under
+ * Cache Components a page that reads `searchParams` has to stream behind
+ * Suspense, which commits a 200 before it knows whether the invite exists;
+ * as a path param the crew page can decide its 404 up front. The address bar
+ * keeps the shared link.
+ */
+function crewRewrite(request: NextRequest): URL | null {
+  const match = /^\/c\/([^/]+)\/?$/.exec(request.nextUrl.pathname);
+  const crew = request.nextUrl.searchParams.get("crew")?.trim();
+  if (!match || !crew || !/^[0-9A-Za-z]{1,32}$/.test(crew)) return null;
+  const url = request.nextUrl.clone();
+  url.pathname = `/c/${match[1]}/crew/${crew}`;
+  url.searchParams.delete("crew");
+  return url;
+}
+
 export async function proxy(request: NextRequest) {
-  let supabaseResponse = NextResponse.next({ request });
+  const rewriteTo = crewRewrite(request);
+  const respond = () =>
+    rewriteTo
+      ? NextResponse.rewrite(rewriteTo, { request })
+      : NextResponse.next({ request });
+  let supabaseResponse = respond();
 
   const supabase = createServerClient<Database>(
     SUPABASE_URL,
@@ -18,7 +40,7 @@ export async function proxy(request: NextRequest) {
           for (const { name, value } of cookiesToSet) {
             request.cookies.set(name, value);
           }
-          supabaseResponse = NextResponse.next({ request });
+          supabaseResponse = respond();
           for (const { name, value, options } of cookiesToSet) {
             supabaseResponse.cookies.set(name, value, options);
           }
