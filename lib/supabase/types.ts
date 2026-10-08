@@ -184,6 +184,17 @@ export type Database = {
         Args: { p_username?: string | null; p_user_id?: string | null };
         Returns: PublicProfileRpc | null;
       };
+      /** Community crawls (nook-supabase docs/COMMUNITY_CRAWLS.md). Null for
+       * private, archived, removed or unknown codes when called as anon. */
+      get_community_crawl: {
+        Args: { p_share_code: string };
+        Returns: CommunityCrawlRpc | null;
+      };
+      /** A crew invite's landing preview. Null for unknown or removed. */
+      get_community_crawl_run_preview: {
+        Args: { p_invite_code: string };
+        Returns: CrawlRunPreviewRpc | null;
+      };
     };
     Enums: Record<string, never>;
     CompositeTypes: Record<string, never>;
@@ -281,4 +292,44 @@ export type PublicProfileRpc = {
     image_urls: string[] | null;
     created_at: string;
   }[];
+};
+
+/** What `get_community_crawl` returns (`_community_crawl_json`). It also
+ * carries the crawl uuid, stop ids and `is_creator`; the web page renders
+ * none of those. */
+export type CommunityCrawlRpc = {
+  id: string;
+  title: string;
+  description: string | null;
+  share_code: string;
+  visibility: "private" | "link";
+  status: "active" | "archived" | "removed";
+  stop_count: number;
+  created_at: string;
+  is_creator: boolean;
+  creator: { username: string | null; avatar_url: string | null } | null;
+  stops: {
+    stop_id: string;
+    stop_order: number;
+    cafe_id: string;
+    name: string;
+    neighborhood: string | null;
+    featured_image_url: string | null;
+    lat: number | null;
+    lng: number | null;
+  }[];
+  runs_started: number;
+  completions: number;
+};
+
+/** What `get_community_crawl_run_preview` returns. */
+export type CrawlRunPreviewRpc = {
+  title: string;
+  share_code: string;
+  stop_count: number;
+  planned_for: string | null;
+  crew_size: number;
+  crew_limit: number;
+  starter_username: string | null;
+  starter_avatar_url: string | null;
 };
