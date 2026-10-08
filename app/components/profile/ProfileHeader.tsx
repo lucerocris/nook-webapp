@@ -27,7 +27,9 @@ export function countsLine(counts: PublicProfile["counts"]): string {
 export default function ProfileHeader({ profile }: { profile: PublicProfile }) {
   const { counts } = profile;
   const stats = [
-    counts.ranked !== null ? { label: "Ranked", value: counts.ranked } : null,
+    // "0 Ranked" reads as a verdict on the person, so it shows from one, as
+    // in the app.
+    counts.ranked ? { label: "Ranked", value: counts.ranked } : null,
     { label: counts.reviews === 1 ? "Review" : "Reviews", value: counts.reviews },
     counts.cups !== null ? { label: counts.cups === 1 ? "Cup" : "Cups", value: counts.cups } : null,
   ].filter((s): s is { label: string; value: number } => s !== null);

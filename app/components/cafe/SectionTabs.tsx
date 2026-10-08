@@ -1,10 +1,14 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, type ReactNode } from "react";
 
 import { cn } from "@/lib/utils";
 
-export type SectionTab = { id: string; label: string; count?: number };
+/**
+ * With an icon the tab shows only the icon (Instagram's profile tabs); the
+ * label stays as its accessible name and tooltip.
+ */
+export type SectionTab = { id: string; label: string; count?: number; icon?: ReactNode };
 
 /**
  * Jump links to the page's sections, pinned under the top bar (Expedia's tab
@@ -69,6 +73,8 @@ export default function SectionTabs({
             <a
               href={`#${tab.id}`}
               aria-current={current === tab.id ? "location" : undefined}
+              aria-label={tab.icon ? tab.label : undefined}
+              title={tab.icon ? tab.label : undefined}
               className={cn(
                 "flex h-12 items-center border-b-2 text-sm font-medium transition-colors focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-brand",
                 current === tab.id
@@ -76,8 +82,14 @@ export default function SectionTabs({
                   : "border-transparent text-muted hover:text-ink",
               )}
             >
-              {tab.label}
-              {tab.count !== undefined ? (
+              {tab.icon ? (
+                <span aria-hidden className="flex w-12 justify-center">
+                  {tab.icon}
+                </span>
+              ) : (
+                tab.label
+              )}
+              {!tab.icon && tab.count !== undefined ? (
                 <span className="ml-1.5 font-normal text-muted tabular-nums">{tab.count}</span>
               ) : null}
             </a>

@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
-import { LockSimple } from "@phosphor-icons/react/dist/ssr";
+import { ChatCircleText, GridFour, LockSimple } from "@phosphor-icons/react/dist/ssr";
 
 import Footer from "@/app/components/Footer";
 import JsonLd from "@/app/components/JsonLd";
@@ -113,8 +113,10 @@ export default async function PublicProfilePage({ params }: Props) {
             <>
               <SectionTabs
                 tabs={[
-                  { id: "gallery", label: "Gallery", count: profile.photos.length },
-                  { id: "reviews", label: "Reviews", count: profile.counts.reviews },
+                  // Icons like the app's profile tabs: grid for the gallery,
+                  // a speech bubble for reviews.
+                  { id: "gallery", label: "Gallery", icon: <GridFour size={24} /> },
+                  { id: "reviews", label: "Reviews", icon: <ChatCircleText size={24} /> },
                 ]}
                 className="top-16 mt-8 lg:top-16 lg:mx-0 lg:mt-10"
                 listClassName="justify-center gap-10"
