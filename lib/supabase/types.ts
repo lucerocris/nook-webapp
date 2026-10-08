@@ -244,8 +244,9 @@ export type MenuItemRpcRow = {
   }[];
 };
 
-/** What `get_public_profile` returns. No scores, buckets or anything below
- * #3 ever arrive here (nook-supabase docs/PUBLIC_PROFILE.md). */
+/** What `get_public_profile` returns. No scores, buckets or ranking ever
+ * arrive here (nook-supabase docs/PUBLIC_PROFILE.md). Older deployments also
+ * return `top_cafes`; it is ignored, and newer ones leave it out. */
 export type PublicProfileRpc = {
   user_id: string;
   username: string;
@@ -256,14 +257,6 @@ export type PublicProfileRpc = {
   highlights_public: boolean;
   is_self: boolean;
   counts: { reviews: number; ranked: number | null; cups: number | null };
-  top_cafes: {
-    rank: number;
-    cafe_id: string;
-    name: string;
-    neighborhood: string | null;
-    city: string | null;
-    image_url: string | null;
-  }[];
   photos: {
     id: string;
     cafe_id: string;
@@ -271,6 +264,9 @@ export type PublicProfileRpc = {
     cafe_area: string | null;
     image_url: string;
     drink_name: string | null;
+    /** The owner's note on the photo. Absent before the photo-notes
+     * migration. */
+    caption?: string | null;
     taken_at: string;
     pin_order: number | null;
   }[];

@@ -37,7 +37,7 @@ export default function ReviewCard({
   return (
     <article className={cn(bordered && "rounded-2xl border border-line p-5")}>
       {review.authorUsername ? (
-        // The author's public profile (/u/<username>), with their top cafes.
+        // The author's public profile (/u/<username>).
         <Link
           href={`/u/${review.authorUsername}`}
           className="group flex w-fit max-w-full items-center gap-3 rounded-lg focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand"

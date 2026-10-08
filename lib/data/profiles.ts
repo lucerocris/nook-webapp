@@ -7,20 +7,17 @@ import { createClient as createSupabaseClient } from "@supabase/supabase-js";
 
 import type { CafeRpcRow, Database, PublicProfileRpc } from "@/lib/supabase/types";
 
-export type PublicTopCafe = {
-  rank: number;
-  cafeId: string;
-  name: string;
-  area: string | null;
-  imageUrl: string | null;
-};
-
 export type PublicPhoto = {
   id: string;
   cafeId: string;
   cafeName: string;
+  cafeArea: string | null;
   imageUrl: string;
   drinkName: string | null;
+  /** The owner's note on the photo. */
+  note: string | null;
+  takenAt: string | null;
+  pinned: boolean;
 };
 
 export type PublicReview = {
@@ -36,22 +33,23 @@ export type PublicReview = {
 };
 
 /** Another person's profile as anyone may see it. Never a score, a bucket or
- * anything below #3 (nook-supabase docs/PUBLIC_PROFILE.md). */
+ * their ranking (nook-supabase docs/PUBLIC_PROFILE.md). */
 export type PublicProfile = {
   userId: string;
   username: string;
+  /** Full name, or the username when they have not set one. */
   name: string;
+  hasName: boolean;
   avatarUrl: string | null;
   bio: string | null;
-  /** The owner's "Show my top cafes and gallery" switch. */
-  highlightsPublic: boolean;
+  /** The owner's "Show my gallery on my profile" switch. */
+  galleryPublic: boolean;
   counts: { reviews: number; ranked: number | null; cups: number | null };
-  topCafes: PublicTopCafe[];
   photos: PublicPhoto[];
   reviews: PublicReview[];
 };
 
-const USERNAME_RE = /^[A-Za-z0-9_]{3,20}$/;
+const USERNAME_RE = /^[A-Za-z0-9_.]{3,20}$/;
 
 export function isUsername(value: string): boolean {
   return USERNAME_RE.test(value);
@@ -68,48 +66,49 @@ function area(...parts: (string | null | undefined)[]): string | null {
   return shown.length > 0 ? shown.join(", ") : null;
 }
 
+function text(value: string | null | undefined): string | null {
+  const t = value?.trim();
+  return t ? t : null;
+}
+
 export function mapPublicProfile(row: PublicProfileRpc): PublicProfile {
-  const open = row.highlights_public;
+  const open = row.highlights_public !== false;
+  const fullName = text(row.full_name);
   return {
     userId: row.user_id,
     username: row.username,
-    name: row.full_name?.trim() || row.username,
-    avatarUrl: row.avatar_url,
-    bio: row.bio?.trim() || null,
-    highlightsPublic: open,
+    name: fullName ?? row.username,
+    hasName: fullName !== null,
+    avatarUrl: text(row.avatar_url),
+    bio: text(row.bio),
+    galleryPublic: open,
     counts: {
       reviews: row.counts?.reviews ?? row.reviews?.length ?? 0,
       ranked: open ? (row.counts?.ranked ?? null) : null,
       cups: open ? (row.counts?.cups ?? null) : null,
     },
-    // Belt and braces: never more than three, never any when private.
-    topCafes: open
-      ? [...(row.top_cafes ?? [])]
-          .sort((a, b) => a.rank - b.rank)
-          .slice(0, 3)
-          .map((c) => ({
-            rank: c.rank,
-            cafeId: c.cafe_id,
-            name: c.name,
-            area: area(c.neighborhood, c.city),
-            imageUrl: c.image_url,
-          }))
-      : [],
+    // Belt and braces: the RPC already sends none when the switch is off.
     photos: open
-      ? (row.photos ?? []).map((p) => ({
-          id: p.id,
-          cafeId: p.cafe_id,
-          cafeName: p.cafe_name,
-          imageUrl: p.image_url,
-          drinkName: p.drink_name,
-        }))
+      ? (row.photos ?? [])
+          .filter((p) => text(p.image_url))
+          .map((p) => ({
+            id: p.id,
+            cafeId: p.cafe_id,
+            cafeName: p.cafe_name,
+            cafeArea: text(p.cafe_area),
+            imageUrl: p.image_url,
+            drinkName: text(p.drink_name),
+            note: text(p.caption),
+            takenAt: p.taken_at ?? null,
+            pinned: p.pin_order !== null && p.pin_order !== undefined,
+          }))
       : [],
     reviews: (row.reviews ?? []).map((r) => ({
       id: r.id,
       cafeId: r.cafe_id,
       cafeName: r.cafe_name,
-      cafeArea: r.cafe_area,
-      cafeImageUrl: r.cafe_image_url,
+      cafeArea: text(r.cafe_area),
+      cafeImageUrl: text(r.cafe_image_url),
       rating: r.rating,
       content: r.content?.trim() ?? "",
       imageUrls: r.image_urls ?? [],
@@ -122,9 +121,9 @@ export function mapPublicProfile(row: PublicProfileRpc): PublicProfile {
 const MISSING_FUNCTION = "PGRST202";
 
 /**
- * Local preview only. `get_public_profile` is not in production yet, so with
- * `NOOK_FAKE_PUBLIC_PROFILE=1` in a development server the usernames `demo`,
- * `demo_one` and `demo_private` render from real cafes and invented people.
+ * Local preview only, for states production has no example of. With
+ * `NOOK_FAKE_PUBLIC_PROFILE=1` in a development server, `fake_full`,
+ * `fake_private` and `fake_long` render from real cafes and invented people.
  * Ignored in production builds.
  */
 function fakeEnabled(): boolean {
@@ -134,11 +133,23 @@ function fakeEnabled(): boolean {
   );
 }
 
+const NOTES = [
+  "Too sweet for me, but the foam held up the whole way down.",
+  null,
+  "Rainy Tuesday, stayed three hours. Not too sweet, the espresso still comes through.",
+  null,
+];
+
 async function fakeProfile(username: string): Promise<PublicProfile | null> {
-  const variants: Record<string, { top: number; open: boolean; name: string; bio: string | null }> = {
-    demo: { top: 3, open: true, name: "Bea Santos", bio: "Flat whites and window seats. IT Park on weekdays." },
-    demo_one: { top: 1, open: true, name: "Migs Dela Cruz", bio: null },
-    demo_private: { top: 0, open: false, name: "Ana Reyes", bio: "Matcha first, coffee second." },
+  const variants: Record<string, { open: boolean; name: string | null; bio: string | null; photos: number }> = {
+    fake_full: { open: true, name: "Bea Santos", bio: "Flat whites and window seats. IT Park on weekdays.", photos: 14 },
+    fake_private: { open: false, name: "Ana Reyes", bio: "Matcha first, coffee second.", photos: 0 },
+    fake_long: {
+      open: true,
+      name: "Maria Concepcion Villanueva-Dela Cruz",
+      bio: "Third-wave coffee nerd from Mandaue. I review every cafe I work from: Wi-Fi, outlets, chairs that don't wreck your back, and whether they let you stay past your second cup. Pour-over over everything.",
+      photos: 1,
+    },
   };
   const v = variants[username.toLowerCase()];
   if (!v) return null;
@@ -149,12 +160,12 @@ async function fakeProfile(username: string): Promise<PublicProfile | null> {
     p_tag_names: null,
     p_lat: null,
     p_lng: null,
-    p_limit: 12,
+    p_limit: 16,
     p_offset: 0,
   });
   if (error) console.warn("[profiles] fake cafes failed", error.message);
   const cafes = ((data ?? []) as unknown as CafeRpcRow[]).filter((c) => c.featured_image_url);
-  const reviews: PublicReview[] = cafes.slice(0, 3).map((c, i) => ({
+  const reviews: PublicReview[] = (v.open ? cafes.slice(0, 3) : cafes.slice(0, 2)).map((c, i) => ({
     id: `r${i}`,
     cafeId: c.id,
     cafeName: c.name,
@@ -166,35 +177,35 @@ async function fakeProfile(username: string): Promise<PublicProfile | null> {
       "Good pour-over, a little loud after five.",
       "",
     ][i],
-    imageUrls: [],
+    imageUrls: i === 0 ? cafes.slice(4, 7).map((x) => x.featured_image_url as string) : [],
     createdAt: new Date(Date.UTC(2026, 8, 20 - i * 6)).toISOString(),
   }));
-  return {
-    userId: `demo-${username}`,
-    username,
-    name: v.name,
-    avatarUrl: null,
-    bio: v.bio,
-    highlightsPublic: v.open,
-    counts: { reviews: reviews.length, ranked: v.open ? (v.top === 1 ? 1 : 18) : null, cups: v.open ? cafes.length : null },
-    topCafes: v.open
-      ? cafes.slice(0, v.top).map((c, i) => ({
-          rank: i + 1,
-          cafeId: c.id,
-          name: c.name,
-          area: area(c.neighborhood, c.city),
-          imageUrl: c.featured_image_url ?? null,
-        }))
-      : [],
-    photos: v.open
-      ? cafes.map((c, i) => ({
+  const photos: PublicPhoto[] = v.open
+    ? Array.from({ length: v.photos }, (_, i) => {
+        const c = cafes[i % cafes.length];
+        return {
           id: `p${i}`,
           cafeId: c.id,
           cafeName: c.name,
+          cafeArea: area(c.neighborhood, c.city),
           imageUrl: c.featured_image_url as string,
-          drinkName: i % 2 === 0 ? "Iced Spanish latte" : null,
-        }))
-      : [],
+          drinkName: i % 3 === 0 ? "Iced Spanish latte" : i % 3 === 1 ? "Cortado" : null,
+          note: NOTES[i % NOTES.length],
+          takenAt: new Date(Date.UTC(2026, 8, 28 - i)).toISOString(),
+          pinned: i < 2,
+        };
+      })
+    : [];
+  return {
+    userId: `fake-${username}`,
+    username,
+    name: v.name ?? username,
+    hasName: v.name !== null,
+    avatarUrl: null,
+    bio: v.bio,
+    galleryPublic: v.open,
+    counts: { reviews: reviews.length, ranked: v.open ? 18 : null, cups: v.open ? photos.length : null },
+    photos,
     reviews,
   };
 }

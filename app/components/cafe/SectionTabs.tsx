@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 
 import { cn } from "@/lib/utils";
 
-export type SectionTab = { id: string; label: string };
+export type SectionTab = { id: string; label: string; count?: number };
 
 /**
  * Jump links to the page's sections, pinned under the top bar (Expedia's tab
@@ -14,10 +14,13 @@ export type SectionTab = { id: string; label: string };
 export default function SectionTabs({
   tabs,
   className,
+  listClassName,
 }: {
   tabs: SectionTab[];
   /** Overrides, e.g. a pinned offset on pages that keep the navbar on phones. */
   className?: string;
+  /** Overrides for the row of tabs, e.g. centring them. */
+  listClassName?: string;
 }) {
   const [current, setCurrent] = useState(tabs[0]?.id);
 
@@ -60,7 +63,7 @@ export default function SectionTabs({
         className,
       )}
     >
-      <ul className="no-scrollbar flex gap-6 overflow-x-auto">
+      <ul className={cn("no-scrollbar flex gap-6 overflow-x-auto", listClassName)}>
         {tabs.map((tab) => (
           <li key={tab.id} className="shrink-0">
             <a
@@ -74,6 +77,9 @@ export default function SectionTabs({
               )}
             >
               {tab.label}
+              {tab.count !== undefined ? (
+                <span className="ml-1.5 font-normal text-muted tabular-nums">{tab.count}</span>
+              ) : null}
             </a>
           </li>
         ))}
