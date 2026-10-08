@@ -1,0 +1,21 @@
+{
+  "applinks": {
+    "details": [
+      {
+        "appIDs": [
+          "WD8496XKN8.app.nookph"
+        ],
+        "components": [
+          {
+            "/": "/u/*",
+            "comment": "Public profiles"
+          },
+          {
+            "/": "/c/*",
+            "comment": "Shared crawls"
+          }
+        ]
+      }
+    ]
+  }
+}

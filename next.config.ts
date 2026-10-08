@@ -103,6 +103,12 @@ const nextConfig: NextConfig = {
         headers: securityHeaders,
       },
       {
+        // Universal links: iOS fetches this file without an extension and
+        // needs it served as JSON.
+        source: "/.well-known/apple-app-site-association",
+        headers: [{ key: "Content-Type", value: "application/json" }],
+      },
+      {
         // 85 KB of static map style, refetched on every map mount because
         // /public defaults to must-revalidate. This tells browsers to hold it
         // for a year, so content-hash the filename if the style ever changes.

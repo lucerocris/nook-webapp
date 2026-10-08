@@ -54,7 +54,8 @@ export const config = {
      *    call (one per keystroke in the search dropdown)
      *  - json/txt/xml — mapstyle.json, robots.txt and sitemap.xml are static
      *    and were each paying for an auth refresh
+     *  - `.well-known/` — app-link files for iOS and Android, static
      */
-    "/((?!api/|_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp|ico|json|txt|xml)$).*)",
+    "/((?!api/|\\.well-known/|_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp|ico|json|txt|xml)$).*)",
   ],
 };
