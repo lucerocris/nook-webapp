@@ -47,13 +47,19 @@ export default function CrawlRouteMap({ points, title }: { points: RoutePoint[];
         container: containerRef.current,
         style,
         bounds,
-        fitBoundsOptions: { padding: 56, maxZoom: 15 },
+        // More room at the bottom: the attribution button sits there.
+        fitBoundsOptions: { padding: { top: 48, right: 64, bottom: 64, left: 48 }, maxZoom: 15 },
         cooperativeGestures: true,
         attributionControl: { compact: true },
       });
       map.addControl(new maplibre.NavigationControl({ showCompass: false }), "top-right");
 
       map.on("load", () => {
+        // The compact attribution opens expanded and covers the lowest pins
+        // on a phone; start it folded to its (i) button.
+        containerRef.current
+          ?.querySelector(".maplibregl-ctrl-attrib.maplibregl-compact-show")
+          ?.classList.remove("maplibregl-compact-show");
         if (!map || points.length < 2) return;
         map.addSource(ROUTE_SOURCE, {
           type: "geojson",

@@ -82,13 +82,13 @@ export async function renderCrawlCard(
   const facts = [
     `${count} ${count === 1 ? "stop" : "stops"}`,
     crawl?.routeMeters ? `${formatDistance(crawl.routeMeters)} stop to stop` : null,
-    invite ? `${invite.crewSize} of ${invite.crewLimit} in the crew` : null,
+    invite ? `${invite.crewSize} of ${invite.crewLimit} joined` : null,
   ]
     .filter(Boolean)
     .join("  ·  ");
   const byline = invite
     ? invite.starter
-      ? `@${invite.starter.username} invited you to their crew`
+      ? `Invited by @${invite.starter.username}`
       : "You're invited to a crew"
     : crawl?.creator
       ? `A crawl by @${crawl.creator.username}`
