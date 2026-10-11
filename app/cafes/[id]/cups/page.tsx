@@ -10,7 +10,7 @@ import CupCard from "@/app/components/cafe/CupCard";
 import { AddCupPrompt, CupKindLinks, CupsSummary } from "@/app/components/cafe/CafeCups";
 import { CUP_KIND_LABEL } from "@/app/components/cafe/CupKindIcon";
 import { getCafeById } from "@/lib/data/cafes";
-import { CUPS_PAGE_SIZE, getCafeCups } from "@/lib/data/cups";
+import { CUPS_PAGE_SIZE, getCafeCupKindCounts, getCafeCups } from "@/lib/data/cups";
 import { parseCupsQuery, plural, type CupSort, type CupsQuery } from "@/lib/data/cups-mappers";
 import { SITE_URL as siteUrl } from "@/lib/env";
 import { cafeShareMetadata } from "@/lib/seo/metadata";
@@ -71,11 +71,11 @@ async function CafeCupsContent({ params, searchParams }: Props) {
   if (!cafe) notFound();
 
   const limit = Math.min(query.page * CUPS_PAGE_SIZE, 100);
-  const cups = await getCafeCups(
-    id,
-    { rating: cafe.rating, reviewCount: cafe.reviewCount },
-    { sort: query.sort, rating: query.rating, kind: query.kind, limit },
-  );
+  const legacy = { rating: cafe.rating, reviewCount: cafe.reviewCount };
+  const [cups, kindCounts] = await Promise.all([
+    getCafeCups(id, legacy, { sort: query.sort, rating: query.rating, kind: query.kind, limit }),
+    getCafeCupKindCounts(id, legacy),
+  ]);
   const filtered = query.kind !== null || query.rating !== null;
   const pill =
     "inline-flex h-9 shrink-0 items-center rounded-full border px-3.5 text-sm font-medium transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand";
@@ -100,7 +100,7 @@ async function CafeCupsContent({ params, searchParams }: Props) {
         <div className="mt-8 grid gap-10 lg:grid-cols-[minmax(0,1fr)_320px] lg:gap-16">
           <div className="order-2 min-w-0 lg:order-1">
             <CupKindLinks
-              stats={cups.stats}
+              counts={kindCounts}
               active={query.kind}
               hrefFor={(kind) => hrefWith(id, query, { kind })}
             />

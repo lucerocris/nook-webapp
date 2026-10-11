@@ -19,7 +19,10 @@ export type CupPhoto = { id: string; imageUrl: string; takenAt: string | null };
 
 export type CupItem = {
   id: string;
-  kind: CupKind;
+  /** What the poster said it is. null for legacy photos (a review's photos,
+   * a loose gallery photo day): nobody typed them, and the server's 'coffee'
+   * for them is a placeholder, not a fact (UX review 2.2 / 6.1). */
+  kind: CupKind | null;
   /** item_name, else the linked menu item's name, else null. */
   label: string | null;
   photo: CupPhoto | null;
@@ -46,6 +49,8 @@ export type CupStats = {
   cupCount: number;
   peopleCount: number;
   photoCount: number;
+  /** As the server counts them, legacy photos included under 'coffee'. Not
+   * for display: the kind chips use `countCupsByKind`. */
   kindPhotoCounts: Record<CupKind, number>;
   ratedPeopleCount: number;
   /** Average of each person's latest rated visit; null with no ratings. */
@@ -96,12 +101,19 @@ function isKind(value: unknown): value is CupKind {
   return typeof value === "string" && (CUP_KINDS as readonly string[]).includes(value);
 }
 
-export function mapCupItem(raw: Raw): CupItem {
+/** A visit read from legacy rows (a review, or a day of gallery photos)
+ * rather than posted with the composer. Its items' kinds were filled in by
+ * the server, not chosen by anyone. */
+export function isLegacyCup(raw: Raw): boolean {
+  return raw.is_virtual === true || raw.source === "review" || raw.source === "photos";
+}
+
+export function mapCupItem(raw: Raw, { untyped = false }: { untyped?: boolean } = {}): CupItem {
   const photo = raw.photo && typeof raw.photo === "object" ? (raw.photo as Raw) : null;
   const imageUrl = photo ? str(photo.image_url) : null;
   return {
     id: String(raw.id),
-    kind: isKind(raw.kind) ? raw.kind : "coffee",
+    kind: !untyped && isKind(raw.kind) ? raw.kind : null,
     label: str(raw.item_name)?.trim() || str(raw.menu_item_name)?.trim() || null,
     photo:
       photo && imageUrl
@@ -111,7 +123,10 @@ export function mapCupItem(raw: Raw): CupItem {
 }
 
 export function mapCupCard(raw: Raw): CupCard {
-  const items = Array.isArray(raw.items) ? (raw.items as Raw[]).map(mapCupItem) : [];
+  const untyped = isLegacyCup(raw);
+  const items = Array.isArray(raw.items)
+    ? (raw.items as Raw[]).map((item) => mapCupItem(item, { untyped }))
+    : [];
   const source = raw.source === "review" || raw.source === "photos" ? raw.source : "cup";
   return {
     id: String(raw.id),
@@ -174,8 +189,8 @@ export type LegacyReviewRow = {
     | null;
 };
 
-/** A legacy review as a cup. Its photos become coffee items, matching how the
- * cups backend reads review photos (kind 'coffee', no name). */
+/** A legacy review as a cup. Its photos are untyped items: the cups backend
+ * calls them 'coffee', but nobody said so. */
 export function reviewToCup(row: LegacyReviewRow): CupCard {
   const profile = Array.isArray(row.profile) ? row.profile[0] : row.profile;
   return {
@@ -191,7 +206,7 @@ export function reviewToCup(row: LegacyReviewRow): CupCard {
     helpfulCount: row.helpful_count ?? 0,
     items: (row.image_urls ?? []).filter(Boolean).map((url, index) => ({
       id: `${row.id}:${index}`,
-      kind: "coffee" as const,
+      kind: null,
       label: null,
       photo: { id: `${row.id}:${index}`, imageUrl: url, takenAt: row.created_at },
     })),
@@ -220,6 +235,24 @@ export function legacyStats(
     ratedPeopleCount: count,
     rating: count > 0 ? cafeRating : null,
   };
+}
+
+// ── Kinds ────────────────────────────────────────────────────────────────
+
+/** True when the poster put something of this kind in the cup, with a photo
+ * or without. Untyped (legacy) items never match. */
+export function cupHasKind(cup: CupCard, kind: CupKind): boolean {
+  return cup.items.some((item) => item.kind === kind);
+}
+
+/** Cups (visits) that contain each kind, for the kind chips: "Food 2" is two
+ * visits where someone had food, not two food photos (UX review 4.2). */
+export function countCupsByKind(cups: CupCard[]): Record<CupKind, number> {
+  const counts: Record<CupKind, number> = { coffee: 0, drink: 0, food: 0, space: 0 };
+  for (const cup of cups) {
+    for (const kind of CUP_KINDS) if (cupHasKind(cup, kind)) counts[kind] += 1;
+  }
+  return counts;
 }
 
 // ── Display helpers ──────────────────────────────────────────────────────

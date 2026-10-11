@@ -12,6 +12,8 @@ import {
   parseCupsQuery,
   relativeVisitDate,
   reviewToCup,
+  countCupsByKind,
+  cupHasKind,
   type CafeCups,
 } from "./cups-mappers.ts";
 
@@ -50,7 +52,9 @@ test("a cup without stars keeps a null rating, never 0", () => {
   assert.equal(cup.authorName, "sai");
   assert.equal(cup.items[0].label, "Spanish latte");
   assert.equal(cup.items[1].photo, null);
-  assert.equal(cup.items[1].kind, "food");
+  // A legacy photo day: the server's kinds are placeholders, so none stick.
+  assert.equal(cup.items[0].kind, null);
+  assert.equal(cup.items[1].kind, null);
 });
 
 test("stats count cups (visits) and photos separately; rating only when rated", () => {
@@ -89,6 +93,7 @@ test("a legacy review is one cup with its stars and photos", () => {
   assert.equal(cup.rating, 5);
   assert.equal(cup.note, "Great.");
   assert.equal(cup.items.length, 2);
+  assert.ok(cup.items.every((item) => item.kind === null));
   assert.equal(cup.username, "kuroba_kohii");
   const stats = legacyStats([{ user_id: "u1", image_urls: ["a.jpg", "b.jpg"] }], 5, 1);
   assert.equal(cupStatsLine(stats), "1 rating · 1 cup · 2 photos");
@@ -168,4 +173,47 @@ test("visit days count on the Philippine calendar, whatever the runtime zone", (
   assert.equal(relativeVisitDate("2026-10-11", now), "Today");
   // A legacy timestamp late on the 10th in UTC is the 11th in Manila.
   assert.equal(relativeVisitDate("2026-10-10T17:30:00Z", now), "Today");
+});
+
+const posted = (id: string, kinds: (string | null)[], source = "cup", isVirtual = false) =>
+  mapCupCard({
+    id,
+    source,
+    is_virtual: isVirtual,
+    user_id: `u-${id}`,
+    visited_at: "2026-10-05",
+    items: kinds.map((kind, i) => ({
+      id: `${id}-${i}`,
+      kind,
+      item_name: kind === "food" ? "Banana bread" : null,
+      photo: i === 0 ? { id: `${id}-p`, image_url: "https://cdn/x.jpg" } : null,
+    })),
+  });
+
+test("a posted cup keeps the kinds its poster chose, photo or not", () => {
+  const cup = posted("a", ["coffee", "food"]);
+  assert.equal(cup.items[0].kind, "coffee");
+  assert.equal(cup.items[1].kind, "food");
+  assert.equal(cup.items[1].photo, null);
+  assert.equal(cupHasKind(cup, "food"), true);
+  assert.equal(cupHasKind(cup, "space"), false);
+});
+
+test("legacy visits (reviews, photo days, virtual) are untyped", () => {
+  assert.equal(posted("r", ["coffee"], "review", true).items[0].kind, null);
+  assert.equal(posted("p", ["coffee"], "photos", true).items[0].kind, null);
+  // A review copied into a cup row is still the review's photos.
+  assert.equal(posted("c", ["coffee"], "review", false).items[0].kind, null);
+});
+
+test("kind chips count cups that contain the kind, not photos", () => {
+  const counts = countCupsByKind([
+    // Three coffee photos in one visit count once.
+    posted("a", ["coffee", "coffee", "coffee"]),
+    // Food without a photo still counts.
+    posted("b", ["drink", "food"]),
+    // Legacy photos count for nothing.
+    posted("c", ["coffee", "coffee"], "review", true),
+  ]);
+  assert.deepEqual(counts, { coffee: 1, drink: 1, food: 1, space: 0 });
 });

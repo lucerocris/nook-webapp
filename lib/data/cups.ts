@@ -7,6 +7,8 @@ import { createClient as createSupabaseClient } from "@supabase/supabase-js";
 
 import { isCafeId } from "./cafes";
 import {
+  countCupsByKind,
+  cupHasKind,
   isMissingRpcError,
   legacyStats,
   mapCafeCupsPayload,
@@ -86,17 +88,32 @@ export const getCafeCups = cache(
     const supabase = createAnonClient();
 
     if (!forceLegacy()) {
+      // A kind filter is applied here, not only by the server: the server
+      // counts a legacy photo as coffee, which nobody said it was. So read
+      // the server's matches (up to 100) and keep the cups where someone
+      // actually put that kind, then page through those.
       const { data, error } = await supabase.rpc("get_cafe_cups", {
         p_cafe_id: cafeId,
         p_sort: sort,
         p_rating_filter: rating,
         p_kind_filter: kind,
-        p_limit: Math.min(Math.max(limit, 1), 100),
-        p_offset: Math.max(offset, 0),
+        p_limit: kind ? 100 : Math.min(Math.max(limit, 1), 100),
+        p_offset: kind ? 0 : Math.max(offset, 0),
         p_photo_limit: 0,
       });
       if (!error) {
-        return data ? mapCafeCupsPayload(data as Record<string, unknown>) : empty;
+        if (!data) return empty;
+        const cups = mapCafeCupsPayload(data as Record<string, unknown>);
+        if (!kind) return cups;
+        const matching = cups.cards.filter((card) => cupHasKind(card, kind));
+        const start = Math.max(offset, 0);
+        const cards = matching.slice(start, start + limit);
+        return {
+          ...cups,
+          cards,
+          total: matching.length,
+          hasMore: start + cards.length < matching.length,
+        };
       }
       if (!isMissingRpcError(error)) throw error;
     }
@@ -105,8 +122,8 @@ export const getCafeCups = cache(
   },
 );
 
-/** Reviews as cups. Legacy reviews have photos but no kinds or names; the
- * Cups backend reads their photos as coffee, and so does this. */
+/** Reviews as cups. Legacy reviews have photos but no kinds or names, so
+ * their photos stay untyped. */
 async function legacyCafeCups(
   supabase: ReturnType<typeof createAnonClient>,
   cafeId: string,
@@ -128,8 +145,8 @@ async function legacyCafeCups(
   if (statsRows.error) throw statsRows.error;
   const stats = legacyStats(statsRows.data ?? [], cafe.rating, cafe.reviewCount);
 
-  // Only coffee (photos) or all: legacy reviews have nothing else.
-  if (kind && kind !== "coffee") {
+  // Legacy reviews have photos but no kinds, so no kind matches.
+  if (kind) {
     return { mode: "legacy", stats, cards: [], total: 0, hasMore: false };
   }
 
@@ -143,7 +160,6 @@ async function legacyCafeCups(
     .eq("cafe_id", cafeId)
     .eq("moderation_status", "visible");
   if (rating) query = query.eq("rating", rating);
-  if (kind === "coffee") query = query.not("image_urls", "eq", "{}");
   query =
     sort === "highest"
       ? query.order("rating", { ascending: false }).order("created_at", { ascending: false })
@@ -165,3 +181,21 @@ async function legacyCafeCups(
     hasMore: offset + cards.length < total,
   };
 }
+
+/**
+ * For the kind chips: how many of a cafe's cups (visits) contain each kind,
+ * counting only what posters typed (legacy photos are untyped). Read from the
+ * newest 100 cups, which is every cup on every cafe today; past that the
+ * counts are a floor. All zero in the legacy fallback, so no chips show.
+ */
+export const getCafeCupKindCounts = cache(
+  async (
+    cafeId: string,
+    legacy: { rating: number; reviewCount: number },
+  ): Promise<Record<CupKind, number>> => {
+    "use cache";
+    cacheLife("hours");
+    const cups = await getCafeCups(cafeId, legacy, { sort: "recent", limit: 100 });
+    return countCupsByKind(cups.cards);
+  },
+);

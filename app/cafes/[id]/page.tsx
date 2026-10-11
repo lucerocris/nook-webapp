@@ -18,7 +18,7 @@ import SectionTabs from "@/app/components/cafe/SectionTabs";
 import Footer from "@/app/components/Footer";
 import MenuHighlightsRow from "@/app/components/MenuHighlightsRow";
 import { getCafeById, getMenuItems } from "@/lib/data/cafes";
-import { getCafeCups } from "@/lib/data/cups";
+import { getCafeCupKindCounts, getCafeCups } from "@/lib/data/cups";
 import { parseOperatingHours } from "@/lib/utils/hours";
 import { parseSocialLinks } from "@/lib/utils/social";
 import JsonLd from "@/app/components/JsonLd";
@@ -115,10 +115,11 @@ async function CafeDetailContent({ params }: Props) {
 
   // Cups (one per visit) through the Cups RPCs, or the reviews as cups where
   // the server doesn't have them yet. Any other error leaves `cups` null.
-  const cups = await settle(
-    () => getCafeCups(id, { rating: cafe.rating, reviewCount: cafe.reviewCount }),
-    "cafe cups",
-  );
+  const legacy = { rating: cafe.rating, reviewCount: cafe.reviewCount };
+  const [cups, kindCounts] = await Promise.all([
+    settle(() => getCafeCups(id, legacy), "cafe cups"),
+    settle(() => getCafeCupKindCounts(id, legacy), "cafe cup kinds"),
+  ]);
 
   const gallery = [cafe.featuredImageUrl, ...cafe.photoUrls].filter(
     (url): url is string => typeof url === "string" && url.length > 0,
@@ -255,7 +256,7 @@ async function CafeDetailContent({ params }: Props) {
                 {/* The old #reviews links still land here. */}
                 <span id="reviews" aria-hidden />
                 {cups ? (
-                  <CafeCups cafeId={id} cups={cups} />
+                  <CafeCups cafeId={id} cups={cups} kindCounts={kindCounts} />
                 ) : (
                   <>
                     <SectionTitle>Cups</SectionTitle>

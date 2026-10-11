@@ -58,17 +58,19 @@ export function CupsSummary({ stats }: { stats: CupStats }) {
 }
 
 /** All · Coffee · Drink · Food · Space as links (the kind lives in the URL),
- * each kind only when some cup has a photo of it. */
+ * each kind only when some cup has it, counted in cups: "Food 2" is two
+ * visits where someone had food (`countCupsByKind`). Legacy photos have no
+ * kind, so a cafe with only those shows no chips. */
 export function CupKindLinks({
-  stats,
+  counts,
   active,
   hrefFor,
 }: {
-  stats: CupStats;
+  counts: Record<CupKind, number>;
   active: CupKind | null;
   hrefFor: (kind: CupKind | null) => string;
 }) {
-  const kinds = CUP_KINDS.filter((kind) => stats.kindPhotoCounts[kind] > 0 || kind === active);
+  const kinds = CUP_KINDS.filter((kind) => counts[kind] > 0 || kind === active);
   if (kinds.length === 0) return null;
   const chip =
     "inline-flex h-9 shrink-0 items-center gap-1.5 rounded-full border px-3.5 text-sm font-medium transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand";
@@ -91,7 +93,7 @@ export function CupKindLinks({
           <CupKindIcon kind={kind} size={15} />
           {CUP_KIND_LABEL[kind]}
           <span className={cn("tabular-nums", active === kind ? "text-white/75" : "text-muted")}>
-            {stats.kindPhotoCounts[kind]}
+            {counts[kind]}
           </span>
         </Link>
       ))}
@@ -106,7 +108,16 @@ export function CupKindLinks({
  * Google Maps' order on a phone, summary first. With no cups yet, the prompt
  * is the whole section.
  */
-export default function CafeCups({ cafeId, cups }: { cafeId: string; cups: Cups }) {
+export default function CafeCups({
+  cafeId,
+  cups,
+  kindCounts,
+}: {
+  cafeId: string;
+  cups: Cups;
+  /** null when they couldn't be read: no chips, the rest of the section stays. */
+  kindCounts: Record<CupKind, number> | null;
+}) {
   const { stats, cards } = cups;
   const pageHref = `/cafes/${cafeId}/cups`;
 
@@ -145,11 +156,13 @@ export default function CafeCups({ cafeId, cups }: { cafeId: string; cups: Cups 
           <div className="min-w-0 lg:order-2">
             <CupsSummary stats={stats} />
             <div className="mt-5">
-              <CupKindLinks
-                stats={stats}
-                active={null}
-                hrefFor={(kind) => (kind ? `${pageHref}?kind=${kind}` : pageHref)}
-              />
+              {kindCounts ? (
+                <CupKindLinks
+                  counts={kindCounts}
+                  active={null}
+                  hrefFor={(kind) => (kind ? `${pageHref}?kind=${kind}` : pageHref)}
+                />
+              ) : null}
             </div>
             <AddCupPrompt first={false} className="mt-6 hidden lg:block" />
           </div>

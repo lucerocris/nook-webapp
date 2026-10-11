@@ -113,7 +113,9 @@ export default function CupCard({ cup, shownPhotos = 3 }: { cup: Cup; shownPhoto
               </div>
               {item.label ? (
                 <p className="mt-1.5 flex items-center gap-1 truncate text-xs font-medium text-ink">
-                  <CupKindIcon kind={item.kind} size={12} className="shrink-0 text-fern" />
+                  {item.kind ? (
+                    <CupKindIcon kind={item.kind} size={12} className="shrink-0 text-fern" />
+                  ) : null}
                   <span className="truncate">{item.label}</span>
                 </p>
               ) : null}
@@ -129,7 +131,9 @@ export default function CupCard({ cup, shownPhotos = 3 }: { cup: Cup; shownPhoto
               key={item.id}
               className="inline-flex max-w-full items-center gap-1.5 rounded-full bg-paper px-3 py-1.5 text-xs font-medium text-ink"
             >
-              <CupKindIcon kind={item.kind} size={13} className="shrink-0 text-fern" />
+              {item.kind ? (
+                    <CupKindIcon kind={item.kind} size={13} className="shrink-0 text-fern" />
+                  ) : null}
               <span className="truncate">{item.label}</span>
             </li>
           ))}
