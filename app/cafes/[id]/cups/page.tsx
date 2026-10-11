@@ -166,7 +166,7 @@ async function CafeCupsContent({ params, searchParams }: Props) {
                 </p>
                 <p className="mt-1 text-sm text-muted">
                   {filtered
-                    ? `Nothing ${query.kind ? CUP_KIND_LABEL[query.kind].toLowerCase() : ""}${
+                    ? `No ${query.kind ? `${CUP_KIND_LABEL[query.kind].toLowerCase()} ` : ""}cups${
                         query.rating ? ` rated ${plural(query.rating, "star")}` : ""
                       } yet.`
                     : "Been here? Add the first one in the Nook app."}
