@@ -4,7 +4,6 @@ import { DeviceMobile, Star } from "@phosphor-icons/react/dist/ssr";
 import {
   CUP_KINDS,
   cupStatsLine,
-  plural,
   type CafeCups as Cups,
   type CupKind,
   type CupStats,
@@ -123,12 +122,15 @@ export default function CafeCups({ cafeId, cups }: { cafeId: string; cups: Cups 
             <span className="font-normal text-muted tabular-nums">{stats.cupCount}</span>
           ) : null}
         </h2>
+        {/* The section's only "See all" (UX review 1.3): the footer keeps just
+            the app prompt. */}
         {cards.length > 0 ? (
           <Link
             href={pageHref}
-            className="text-sm font-semibold text-ink underline-offset-4 hover:underline"
+            className="inline-flex min-h-11 items-center text-sm font-semibold text-ink underline-offset-4 hover:underline"
           >
-            See all
+            See all {stats.cupCount > cards.length ? stats.cupCount : ""}
+            <span className="sr-only"> cups</span>
           </Link>
         ) : null}
       </div>
@@ -159,16 +161,6 @@ export default function CafeCups({ cafeId, cups }: { cafeId: string; cups: Cups 
                 </li>
               ))}
             </ul>
-            <div className="mt-2 flex flex-wrap items-center gap-3">
-              {stats.cupCount > cards.length ? (
-                <Link
-                  href={pageHref}
-                  className="inline-flex h-11 items-center rounded-full border border-ink px-5 text-sm font-semibold text-ink transition-colors hover:bg-paper focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand"
-                >
-                  See all {plural(stats.cupCount, "cup")}
-                </Link>
-              ) : null}
-            </div>
             <AddCupPrompt first={false} className="mt-6 lg:hidden" />
           </div>
         </div>

@@ -38,18 +38,24 @@ export default function CafeHeading({
       {cupCount === null ? null : (
         <p className="mt-1 flex flex-wrap items-center gap-x-1.5 text-sm text-body">
           {cupCount > 0 ? (
-            <>
+            // The whole rating is the way to the words behind it (UX review
+            // 1.2): Google Maps' and Apple Maps' rating line jumps to reviews.
+            <a
+              href="#cups"
+              className="-my-2.5 inline-flex min-h-11 items-center gap-x-1.5 rounded-md underline-offset-4 hover:text-ink hover:underline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand"
+            >
               {rating !== null ? (
                 <>
                   <Star size={14} weight="fill" className="text-fern" aria-hidden />
                   <span className="font-semibold tabular-nums text-ink">{rating.toFixed(1)}</span>
+                  <span className="sr-only"> out of 5 from </span>
                   <span aria-hidden>·</span>
                 </>
               ) : null}
-              <a href="#cups" className="underline underline-offset-4 hover:text-ink">
+              <span className="underline">
                 {cupCount} {cupCount === 1 ? "cup" : "cups"}
-              </a>
-            </>
+              </span>
+            </a>
           ) : (
             <span>Fresh on Nook · no cups yet</span>
           )}

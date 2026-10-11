@@ -150,8 +150,8 @@ async function CafeDetailContent({ params }: Props) {
     { id: "overview", label: "Overview" },
     { id: "offers", label: "What it offers" },
     { id: "menu", label: "Menu" },
-    { id: "hours", label: "Hours & location" },
     { id: "cups", label: "Cups" },
+    { id: "hours", label: "Hours & location" },
   ];
 
   return (
@@ -232,20 +232,14 @@ async function CafeDetailContent({ params }: Props) {
                           <p className="mt-1 text-sm text-muted">The cafe&apos;s own picks</p>
                         </>
                       }
-                      actions={<FullMenuLink id={id} />}
+                      actions={<FullMenuLink id={id} count={menu.length} />}
                     />
-                    <Link
-                      href={`/cafes/${id}/menu`}
-                      className="mt-7 inline-flex h-11 items-center rounded-full border border-ink px-5 text-sm font-semibold text-ink transition-colors hover:bg-paper focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand"
-                    >
-                      See the full menu{menu.length > 0 ? ` (${menu.length} items)` : ""}
-                    </Link>
                   </>
                 ) : (
                   <>
                     <div className="flex items-end justify-between gap-4">
                       <SectionTitle>Menu</SectionTitle>
-                      {menu.length > 0 ? <FullMenuLink id={id} /> : null}
+                      {menu.length > 0 ? <FullMenuLink id={id} count={menu.length} /> : null}
                     </div>
                     <p className="mt-3 text-sm text-muted">
                       {menu.length > 0
@@ -256,19 +250,6 @@ async function CafeDetailContent({ params }: Props) {
                 )}
               </section>
 
-              <section id="hours">
-                <SectionTitle>Hours &amp; location</SectionTitle>
-                <div className="mt-6">
-                  <CafeLocation
-                    name={cafe.name}
-                    address={fullAddress}
-                    lat={cafe.lat}
-                    lng={cafe.lng}
-                    hours={operatingHours}
-                    mapsUrl={mapsUrl}
-                  />
-                </div>
-              </section>
 
               <section id="cups">
                 {/* The old #reviews links still land here. */}
@@ -281,6 +262,19 @@ async function CafeDetailContent({ params }: Props) {
                     <SectionUnavailable>Couldn&apos;t load cups right now.</SectionUnavailable>
                   </>
                 )}
+              </section>
+              <section id="hours">
+                <SectionTitle>Hours &amp; location</SectionTitle>
+                <div className="mt-6">
+                  <CafeLocation
+                    name={cafe.name}
+                    address={fullAddress}
+                    lat={cafe.lat}
+                    lng={cafe.lng}
+                    hours={operatingHours}
+                    mapsUrl={mapsUrl}
+                  />
+                </div>
               </section>
             </div>
 
@@ -326,13 +320,16 @@ function SectionUnavailable({ children }: { children: React.ReactNode }) {
   );
 }
 
-function FullMenuLink({ id }: { id: string }) {
+/** The section's one way to the full menu (UX review 1.3: one "See all" per
+ * section), with the item count the old footer button carried. */
+function FullMenuLink({ id, count }: { id: string; count: number }) {
   return (
     <Link
       href={`/cafes/${id}/menu`}
-      className="text-sm font-semibold text-ink underline-offset-4 hover:underline"
+      className="inline-flex min-h-11 items-center text-sm font-semibold text-ink underline-offset-4 hover:underline"
     >
-      View full menu
+      See all {count}
+      <span className="sr-only"> menu items</span>
     </Link>
   );
 }
