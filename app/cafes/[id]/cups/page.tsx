@@ -100,8 +100,8 @@ async function CafeCupsContent({ params, searchParams }: Props) {
               active={query.kind}
               hrefFor={(kind) => hrefWith(id, query, { kind })}
             />
-            <div className="mt-3 flex flex-wrap items-center gap-2">
-              <span className="text-sm text-muted">Stars:</span>
+            <div className="no-scrollbar -mx-1 mt-3 flex items-center gap-2 overflow-x-auto px-1 py-1">
+              <span className="shrink-0 text-sm text-muted">Stars:</span>
               {[null, 5, 4, 3, 2, 1].map((stars) => (
                 <Link
                   key={stars ?? "any"}
@@ -118,15 +118,15 @@ async function CafeCupsContent({ params, searchParams }: Props) {
                 </Link>
               ))}
             </div>
-            <div className="mt-3 flex flex-wrap items-center gap-2">
-              <span className="text-sm text-muted">Sort:</span>
+            <div className="no-scrollbar -mx-1 mt-2 flex items-center gap-3 overflow-x-auto px-1">
+              <span className="shrink-0 text-sm text-muted">Sort:</span>
               {(Object.keys(SORT_LABEL) as CupSort[]).map((sort) => (
                 <Link
                   key={sort}
                   href={hrefWith(id, query, { sort })}
                   aria-current={query.sort === sort ? "page" : undefined}
                   className={cn(
-                    "min-h-11 rounded-md px-1 text-sm font-semibold underline-offset-4 sm:min-h-0",
+                    "inline-flex min-h-11 shrink-0 items-center rounded-md px-1 text-sm font-semibold underline-offset-4",
                     query.sort === sort ? "text-ink underline" : "text-muted hover:text-ink",
                   )}
                 >
@@ -144,6 +144,7 @@ async function CafeCupsContent({ params, searchParams }: Props) {
                     </li>
                   ))}
                 </ul>
+                <AddCupPrompt first={false} className="mb-6 lg:hidden" />
                 {cups.hasMore && limit < 100 ? (
                   <Link
                     href={hrefWith(id, query, { page: query.page + 1 })}
@@ -182,7 +183,10 @@ async function CafeCupsContent({ params, searchParams }: Props) {
             <div className="rounded-[var(--radius-card)] border border-line p-6">
               <CupsSummary stats={cups.stats} />
             </div>
-            <AddCupPrompt first={cups.stats.cupCount === 0} className="mt-4" />
+            <AddCupPrompt
+              first={cups.stats.cupCount === 0}
+              className={cn("mt-4", cups.cards.length > 0 && "hidden lg:block")}
+            />
           </aside>
         </div>
       </main>
