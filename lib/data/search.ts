@@ -7,6 +7,7 @@ import { createClient as createSupabaseClient } from "@supabase/supabase-js";
 
 import type { CafeRpcRow, Database } from "@/lib/supabase/types";
 import { mapCafeSummary, type CafeSummary } from "./cafes-mappers";
+import { taggedNames } from "@/lib/utils/coffee-tags";
 
 type AnonClient = ReturnType<typeof createSupabaseClient<Database>>;
 
@@ -60,8 +61,10 @@ export const getSearchTags = cache(async (): Promise<SearchTags> => {
   return { bestFor, amenities };
 });
 
-/** Names of the active `coffee` tags (docs/COFFEE_TAGS.md). Empty until that
- * migration is applied, which is what keeps the map's Coffee filters hidden. */
+/** Names of the active `coffee` tags (docs/COFFEE_TAGS.md) that at least one
+ * cafe has. Empty until that migration is applied and cafes are tagged, which
+ * is what keeps the map's Coffee filters hidden: a chip no cafe has is a dead
+ * end (COFFEE_VOICE.md §2.2). */
 export const getCoffeeTagNames = cache(async (): Promise<string[]> => {
   "use cache";
   cacheLife("hours");
@@ -69,12 +72,13 @@ export const getCoffeeTagNames = cache(async (): Promise<string[]> => {
   const supabase = createAnonClient();
   const { data, error } = await supabase
     .from("tags")
-    .select("name")
+    .select("name, cafe_tags(count)")
     .eq("is_active", true)
     .eq("category", "coffee");
 
   if (error) throw error;
-  return (data ?? []).map((row) => row.name);
+  // The generated types don't know the tags ← cafe_tags relation.
+  return taggedNames((data ?? []) as unknown as Parameters<typeof taggedNames>[0]);
 });
 
 export type SearchCafesArgs = {

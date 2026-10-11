@@ -11,6 +11,7 @@ import {
   previewTags,
   tagSections,
   tagTotal,
+  taggedNames,
 } from "./coffee-tags.ts";
 
 const tag = (name: string, category: string, isFeatured = false): Tag => ({
@@ -163,4 +164,16 @@ test("every coffee tag has a customer line; other tags do not", () => {
     assert.ok(coffeeTagHint(name), name);
   }
   assert.equal(coffeeTagHint("free wifi"), null);
+});
+
+test("coffee chips only for tags some cafe has", () => {
+  assert.deepEqual(
+    taggedNames([
+      { name: "Espresso", cafe_tags: [{ count: 0 }] },
+      { name: "Pour-over", cafe_tags: [{ count: 4 }] },
+      { name: "Cold Brew", cafe_tags: [] },
+      { name: "Matcha" },
+    ]),
+    ["Pour-over"],
+  );
 });

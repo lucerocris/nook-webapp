@@ -42,6 +42,16 @@ export function coffeeFilterLabels(namesInDatabase: string[]): string[] {
   return COFFEE_TAG_NAMES.filter((name) => present.has(key(name)));
 }
 
+/** Tag names from a `tags` select with `cafe_tags(count)`, keeping only the
+ * tags at least one cafe has. */
+export function taggedNames(
+  rows: { name: string; cafe_tags?: { count: number | null }[] | null }[],
+): string[] {
+  return rows
+    .filter((row) => (row.cafe_tags?.[0]?.count ?? 0) > 0)
+    .map((row) => row.name);
+}
+
 export type CafeTagGroups = {
   coffee: Tag[];
   amenities: Tag[];
