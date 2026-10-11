@@ -13,11 +13,12 @@ import { groupCafeTags } from "@/lib/utils/coffee-tags";
 import CafeHeading from "@/app/components/cafe/CafeHeading";
 import CafeInfoPanel from "@/app/components/cafe/CafeInfoPanel";
 import CafeLocation from "@/app/components/cafe/CafeLocation";
-import CafeReviews from "@/app/components/cafe/CafeReviews";
+import CafeCups from "@/app/components/cafe/CafeCups";
 import SectionTabs from "@/app/components/cafe/SectionTabs";
 import Footer from "@/app/components/Footer";
 import MenuHighlightsRow from "@/app/components/MenuHighlightsRow";
 import { getCafeById, getMenuItems } from "@/lib/data/cafes";
+import { getCafeCups } from "@/lib/data/cups";
 import { parseOperatingHours } from "@/lib/utils/hours";
 import { parseSocialLinks } from "@/lib/utils/social";
 import JsonLd from "@/app/components/JsonLd";
@@ -45,7 +46,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const title = location ? `${cafe.name} — ${location}` : cafe.name;
   const description =
     cafe.description?.trim().slice(0, 160) ||
-    `${cafe.name}${location ? ` in ${location}` : ""} — hours, photos, menu and reviews on Nook.`;
+    `${cafe.name}${location ? ` in ${location}` : ""} — hours, photos, menu and cups on Nook.`;
   const images = cafe.featuredImageUrl
     ? [{ url: cafe.featuredImageUrl, alt: cafe.name }]
     : undefined;
@@ -108,6 +109,13 @@ async function CafeDetailContent({ params }: Props) {
     notFound();
   }
 
+  // Cups (one per visit) through the Cups RPCs, or the reviews as cups where
+  // the server doesn't have them yet.
+  const cups = await getCafeCups(id, {
+    rating: cafe.rating,
+    reviewCount: cafe.reviewCount,
+  });
+
   const gallery = [cafe.featuredImageUrl, ...cafe.photoUrls].filter(
     (url): url is string => typeof url === "string" && url.length > 0,
   );
@@ -139,12 +147,12 @@ async function CafeDetailContent({ params }: Props) {
     { id: "offers", label: "What it offers" },
     { id: "menu", label: "Menu" },
     { id: "hours", label: "Hours & location" },
-    { id: "reviews", label: "Reviews" },
+    { id: "cups", label: "Cups" },
   ];
 
   return (
     <>
-      <JsonLd data={cafeJsonLd(cafe, operatingHours)} />
+      <JsonLd data={cafeJsonLd(cafe, operatingHours, cups)} />
       {/* No global navbar below `lg` (see NavbarShell), so the gallery runs to
           the top edge of the viewport. With no photos the title needs its own
           breathing room instead. */}
@@ -190,8 +198,8 @@ async function CafeDetailContent({ params }: Props) {
                 <h2 className="sr-only">Overview</h2>
                 <CafeHeading
                   area={area}
-                  rating={cafe.rating}
-                  reviewCount={cafe.reviewCount}
+                  rating={cups.stats.rating}
+                  cupCount={cups.stats.cupCount}
                   tags={cafe.tags}
                   description={cafe.description}
                 />
@@ -253,13 +261,10 @@ async function CafeDetailContent({ params }: Props) {
                 </div>
               </section>
 
-              <section id="reviews">
-                <CafeReviews
-                  cafeId={id}
-                  rating={cafe.rating}
-                  reviewCount={cafe.reviewCount}
-                  reviews={cafe.reviews}
-                />
+              <section id="cups">
+                {/* The old #reviews links still land here. */}
+                <span id="reviews" aria-hidden />
+                <CafeCups cafeId={id} cups={cups} />
               </section>
             </div>
 

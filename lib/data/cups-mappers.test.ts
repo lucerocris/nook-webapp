@@ -1,0 +1,160 @@
+import { test } from "node:test";
+import assert from "node:assert/strict";
+
+import {
+  cupStatsLine,
+  isMissingRpcError,
+  jsonLdRating,
+  jsonLdReviewCards,
+  legacyStats,
+  mapCafeCupsPayload,
+  mapCupCard,
+  parseCupsQuery,
+  relativeVisitDate,
+  reviewToCup,
+  type CafeCups,
+} from "./cups-mappers.ts";
+
+test("only a missing function is taken for 'not migrated yet'", () => {
+  assert.equal(isMissingRpcError({ code: "PGRST202", message: "Could not find the function" }), true);
+  assert.equal(isMissingRpcError({ code: "42883" }), true);
+  assert.equal(isMissingRpcError({ code: "42501", message: "permission denied" }), false);
+  assert.equal(isMissingRpcError({ code: "PGRST116" }), false);
+  assert.equal(isMissingRpcError(null), false);
+});
+
+test("a cup without stars keeps a null rating, never 0", () => {
+  const cup = mapCupCard({
+    id: "c1",
+    source: "photos",
+    is_virtual: true,
+    user_id: "u1",
+    username: "sai",
+    full_name: null,
+    rating: null,
+    note: null,
+    visited_at: "2026-10-02",
+    items: [
+      {
+        id: "i1",
+        kind: "coffee",
+        item_name: null,
+        menu_item_name: "Spanish latte",
+        photo: { id: "p1", image_url: "https://cdn/p1.jpg", taken_at: null },
+      },
+      { id: "i2", kind: "food", item_name: "Ensaymada", photo: null },
+    ],
+  });
+  assert.equal(cup.rating, null);
+  assert.equal(cup.source, "photos");
+  assert.equal(cup.authorName, "sai");
+  assert.equal(cup.items[0].label, "Spanish latte");
+  assert.equal(cup.items[1].photo, null);
+  assert.equal(cup.items[1].kind, "food");
+});
+
+test("stats count cups (visits) and photos separately; rating only when rated", () => {
+  const cups = mapCafeCupsPayload({
+    stats: {
+      cup_count: 4,
+      people_count: 3,
+      photo_count: 7,
+      coffee_photo_count: 4,
+      drink_photo_count: 1,
+      food_photo_count: 1,
+      space_photo_count: 1,
+      rated_people_count: 0,
+      rating: 4.5,
+    },
+    cards: [],
+    total: 4,
+    has_more: false,
+  });
+  assert.equal(cups.mode, "rpc");
+  assert.equal(cups.stats.rating, null);
+  assert.equal(cupStatsLine(cups.stats), "4 cups · 7 photos");
+});
+
+test("a legacy review is one cup with its stars and photos", () => {
+  const cup = reviewToCup({
+    id: "r1",
+    user_id: "u1",
+    rating: 5,
+    content: " Great. ",
+    image_urls: ["a.jpg", "b.jpg"],
+    created_at: "2026-07-19T03:00:00Z",
+    helpful_count: 3,
+    profile: [{ username: "kuroba_kohii", full_name: "Jared", avatar_url: null }],
+  });
+  assert.equal(cup.rating, 5);
+  assert.equal(cup.note, "Great.");
+  assert.equal(cup.items.length, 2);
+  assert.equal(cup.username, "kuroba_kohii");
+  const stats = legacyStats([{ user_id: "u1", image_urls: ["a.jpg", "b.jpg"] }], 5, 1);
+  assert.equal(cupStatsLine(stats), "1 rating · 1 cup · 2 photos");
+});
+
+const rpcCups = (rating: number | null, rated: number): CafeCups => ({
+  mode: "rpc",
+  stats: {
+    cupCount: 5,
+    peopleCount: 3,
+    photoCount: 2,
+    kindPhotoCounts: { coffee: 2, drink: 0, food: 0, space: 0 },
+    ratedPeopleCount: rated,
+    rating,
+  },
+  cards: [],
+  total: 5,
+  hasMore: false,
+});
+
+test("JSON-LD aggregate counts each person once, from rated cups only", () => {
+  assert.deepEqual(jsonLdRating(rpcCups(4.25, 2), { rating: 5, reviewCount: 9 }), {
+    ratingValue: 4.3,
+    countProperty: "ratingCount",
+    count: 2,
+  });
+  // Nobody rated: no aggregate, whatever the legacy numbers say.
+  assert.equal(jsonLdRating(rpcCups(null, 0), { rating: 5, reviewCount: 9 }), null);
+  // Fallback: the legacy rating and review count, as before.
+  const legacy: CafeCups = { ...rpcCups(5, 1), mode: "legacy" };
+  assert.deepEqual(jsonLdRating(legacy, { rating: 5, reviewCount: 1 }), {
+    ratingValue: 5,
+    countProperty: "reviewCount",
+    count: 1,
+  });
+});
+
+test("JSON-LD reviews are rated cups with a note, one per person", () => {
+  const base = mapCupCard({ id: "x", user_id: "u1", rating: 5, note: "Good", visited_at: "2026-10-01" });
+  const cards = [
+    base,
+    { ...base, id: "y" },
+    { ...base, id: "z", userId: "u2", rating: null },
+    { ...base, id: "w", userId: "u3", note: null },
+  ];
+  assert.deepEqual(jsonLdReviewCards(cards).map((c) => c.id), ["x"]);
+});
+
+test("query params are checked", () => {
+  assert.deepEqual(parseCupsQuery({ kind: "food", rating: "4", sort: "recent", page: "2" }), {
+    kind: "food",
+    rating: 4,
+    sort: "recent",
+    page: 2,
+  });
+  assert.deepEqual(parseCupsQuery({ kind: "tea", rating: "9", sort: "x" }), {
+    kind: null,
+    rating: null,
+    sort: "recommended",
+    page: 1,
+  });
+});
+
+test("visit days read in words", () => {
+  const now = new Date(2026, 9, 11, 15);
+  assert.equal(relativeVisitDate("2026-10-11", now), "Today");
+  assert.equal(relativeVisitDate("2026-10-10", now), "Yesterday");
+  assert.equal(relativeVisitDate("2026-09-27", now), "2 weeks ago");
+});

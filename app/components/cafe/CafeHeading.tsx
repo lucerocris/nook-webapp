@@ -15,13 +15,15 @@ const KEY_FACTS = 5;
 export default function CafeHeading({
   area,
   rating,
-  reviewCount,
+  cupCount,
   tags,
   description,
 }: {
   area: string;
-  rating: number;
-  reviewCount: number;
+  /** From rated cups only (each person once); null when nobody rated. */
+  rating: number | null;
+  /** Cups are visits, not photos. */
+  cupCount: number;
   tags: Tag[];
   description: string | null;
 }) {
@@ -33,17 +35,21 @@ export default function CafeHeading({
     <div>
       <p className="text-[15px] font-medium text-ink">Cafe{area ? ` in ${area}` : ""}</p>
       <p className="mt-1 flex flex-wrap items-center gap-x-1.5 text-sm text-body">
-        {reviewCount > 0 ? (
+        {cupCount > 0 ? (
           <>
-            <Star size={14} weight="fill" className="text-fern" aria-hidden />
-            <span className="font-semibold tabular-nums text-ink">{rating.toFixed(1)}</span>
-            <span aria-hidden>·</span>
-            <a href="#reviews" className="underline underline-offset-4 hover:text-ink">
-              {reviewCount} {reviewCount === 1 ? "review" : "reviews"}
+            {rating !== null ? (
+              <>
+                <Star size={14} weight="fill" className="text-fern" aria-hidden />
+                <span className="font-semibold tabular-nums text-ink">{rating.toFixed(1)}</span>
+                <span aria-hidden>·</span>
+              </>
+            ) : null}
+            <a href="#cups" className="underline underline-offset-4 hover:text-ink">
+              {cupCount} {cupCount === 1 ? "cup" : "cups"}
             </a>
           </>
         ) : (
-          <span>New on Nook · no reviews yet</span>
+          <span>Fresh on Nook · no cups yet</span>
         )}
       </p>
 

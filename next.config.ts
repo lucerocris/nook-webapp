@@ -96,6 +96,16 @@ const nextConfig: NextConfig = {
   images: {
     remotePatterns,
   },
+  async redirects() {
+    return [
+      {
+        // Reviews became Cups; old links and indexed URLs keep working.
+        source: "/cafes/:id/reviews",
+        destination: "/cafes/:id/cups",
+        permanent: true,
+      },
+    ];
+  },
   async headers() {
     return [
       {
