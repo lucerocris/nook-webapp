@@ -23,6 +23,7 @@ import { parseOperatingHours } from "@/lib/utils/hours";
 import { parseSocialLinks } from "@/lib/utils/social";
 import JsonLd from "@/app/components/JsonLd";
 import { cafeJsonLd } from "@/lib/seo/cafe-json-ld";
+import { settle } from "@/lib/utils/settle";
 
 type Props = {
   params: Promise<{ id: string }>;
@@ -100,9 +101,12 @@ export default async function CafeDetailPage({ params }: Props) {
 async function CafeDetailContent({ params }: Props) {
   const { id } = await params;
 
+  // The menu and the cups are sections, not the page: if either read fails,
+  // that section says so and the rest of the cafe still renders. Only the
+  // cafe itself is allowed to fail the page.
   const [cafe, menu] = await Promise.all([
     getCafeById(id, { includeReviews: false }),
-    getMenuItems(id),
+    settle(() => getMenuItems(id), "cafe menu"),
   ]);
 
   if (!cafe) {
@@ -110,11 +114,11 @@ async function CafeDetailContent({ params }: Props) {
   }
 
   // Cups (one per visit) through the Cups RPCs, or the reviews as cups where
-  // the server doesn't have them yet.
-  const cups = await getCafeCups(id, {
-    rating: cafe.rating,
-    reviewCount: cafe.reviewCount,
-  });
+  // the server doesn't have them yet. Any other error leaves `cups` null.
+  const cups = await settle(
+    () => getCafeCups(id, { rating: cafe.rating, reviewCount: cafe.reviewCount }),
+    "cafe cups",
+  );
 
   const gallery = [cafe.featuredImageUrl, ...cafe.photoUrls].filter(
     (url): url is string => typeof url === "string" && url.length > 0,
@@ -123,7 +127,7 @@ async function CafeDetailContent({ params }: Props) {
   // The row is "Menu Highlights", not the menu — `menu_items.is_highlight`
   // is what the cafe flagged as worth leading with. Passing the unfiltered
   // list put all 15 of Pulso's items in a row meant for its 5.
-  const menuHighlights = menu.filter((item) => item.isHighlight);
+  const menuHighlights = (menu ?? []).filter((item) => item.isHighlight);
 
   const operatingHours = parseOperatingHours(cafe.operatingHours);
   // `address` usually already carries the neighborhood and city ("1045 M. J.
@@ -152,7 +156,7 @@ async function CafeDetailContent({ params }: Props) {
 
   return (
     <>
-      <JsonLd data={cafeJsonLd(cafe, operatingHours, cups)} />
+      <JsonLd data={cafeJsonLd(cafe, operatingHours, cups ?? undefined)} />
       {/* No global navbar below `lg` (see NavbarShell), so the gallery runs to
           the top edge of the viewport. With no photos the title needs its own
           breathing room instead. */}
@@ -198,8 +202,8 @@ async function CafeDetailContent({ params }: Props) {
                 <h2 className="sr-only">Overview</h2>
                 <CafeHeading
                   area={area}
-                  rating={cups.stats.rating}
-                  cupCount={cups.stats.cupCount}
+                  rating={cups ? cups.stats.rating : null}
+                  cupCount={cups ? cups.stats.cupCount : null}
                   tags={cafe.tags}
                   description={cafe.description}
                 />
@@ -213,7 +217,12 @@ async function CafeDetailContent({ params }: Props) {
               </section>
 
               <section id="menu">
-                {menuHighlights.length > 0 ? (
+                {menu === null ? (
+                  <>
+                    <SectionTitle>Menu</SectionTitle>
+                    <SectionUnavailable>Couldn&apos;t load the menu right now.</SectionUnavailable>
+                  </>
+                ) : menuHighlights.length > 0 ? (
                   <>
                     <MenuHighlightsRow
                       items={menuHighlights}
@@ -264,7 +273,14 @@ async function CafeDetailContent({ params }: Props) {
               <section id="cups">
                 {/* The old #reviews links still land here. */}
                 <span id="reviews" aria-hidden />
-                <CafeCups cafeId={id} cups={cups} />
+                {cups ? (
+                  <CafeCups cafeId={id} cups={cups} />
+                ) : (
+                  <>
+                    <SectionTitle>Cups</SectionTitle>
+                    <SectionUnavailable>Couldn&apos;t load cups right now.</SectionUnavailable>
+                  </>
+                )}
               </section>
             </div>
 
@@ -297,6 +313,16 @@ async function CafeDetailContent({ params }: Props) {
 function SectionTitle({ children }: { children: React.ReactNode }) {
   return (
     <h2 className="text-xl font-semibold tracking-[-0.02em] text-ink">{children}</h2>
+  );
+}
+
+/** A section whose read failed: one quiet line, so the rest of the page
+ * carries on. Reloading later is the only fix a visitor has. */
+function SectionUnavailable({ children }: { children: React.ReactNode }) {
+  return (
+    <p role="status" className="mt-3 text-sm text-muted">
+      {children} Try again in a bit.
+    </p>
   );
 }
 

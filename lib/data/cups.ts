@@ -42,6 +42,13 @@ function forceLegacy(): boolean {
   return process.env.NODE_ENV !== "production" && process.env.NOOK_CUPS_LEGACY === "1";
 }
 
+/** Development only: `NOOK_CUPS_FAIL=1` makes the read fail with a
+ * non-"missing function" error, to check the cafe page's failed-section
+ * state by eye. */
+function forceFailure(): boolean {
+  return process.env.NODE_ENV !== "production" && process.env.NOOK_CUPS_FAIL === "1";
+}
+
 /**
  * A cafe's cups (one per visit) through `get_cafe_cups`, or — where the
  * server doesn't have the Cups RPCs yet (PostgREST PGRST202) — its visible
@@ -71,6 +78,10 @@ export const getCafeCups = cache(
       hasMore: false,
     };
     if (!isCafeId(cafeId)) return empty;
+
+    if (forceFailure()) {
+      throw { code: "57014", message: "NOOK_CUPS_FAIL: simulated statement timeout" };
+    }
 
     const supabase = createAnonClient();
 

@@ -22,8 +22,9 @@ export default function CafeHeading({
   area: string;
   /** From rated cups only (each person once); null when nobody rated. */
   rating: number | null;
-  /** Cups are visits, not photos. */
-  cupCount: number;
+  /** Cups are visits, not photos. null when the cups couldn't be read: the
+   * line is left out rather than claiming there are none. */
+  cupCount: number | null;
   tags: Tag[];
   description: string | null;
 }) {
@@ -34,24 +35,26 @@ export default function CafeHeading({
   return (
     <div>
       <p className="text-[15px] font-medium text-ink">Cafe{area ? ` in ${area}` : ""}</p>
-      <p className="mt-1 flex flex-wrap items-center gap-x-1.5 text-sm text-body">
-        {cupCount > 0 ? (
-          <>
-            {rating !== null ? (
-              <>
-                <Star size={14} weight="fill" className="text-fern" aria-hidden />
-                <span className="font-semibold tabular-nums text-ink">{rating.toFixed(1)}</span>
-                <span aria-hidden>·</span>
-              </>
-            ) : null}
-            <a href="#cups" className="underline underline-offset-4 hover:text-ink">
-              {cupCount} {cupCount === 1 ? "cup" : "cups"}
-            </a>
-          </>
-        ) : (
-          <span>Fresh on Nook · no cups yet</span>
-        )}
-      </p>
+      {cupCount === null ? null : (
+        <p className="mt-1 flex flex-wrap items-center gap-x-1.5 text-sm text-body">
+          {cupCount > 0 ? (
+            <>
+              {rating !== null ? (
+                <>
+                  <Star size={14} weight="fill" className="text-fern" aria-hidden />
+                  <span className="font-semibold tabular-nums text-ink">{rating.toFixed(1)}</span>
+                  <span aria-hidden>·</span>
+                </>
+              ) : null}
+              <a href="#cups" className="underline underline-offset-4 hover:text-ink">
+                {cupCount} {cupCount === 1 ? "cup" : "cups"}
+              </a>
+            </>
+          ) : (
+            <span>Fresh on Nook · no cups yet</span>
+          )}
+        </p>
+      )}
 
       {facts.length > 0 ? (
         <ul aria-label="Key facts" className="mt-5 flex flex-wrap gap-2">
