@@ -60,6 +60,23 @@ export const getSearchTags = cache(async (): Promise<SearchTags> => {
   return { bestFor, amenities };
 });
 
+/** Names of the active `coffee` tags (docs/COFFEE_TAGS.md). Empty until that
+ * migration is applied, which is what keeps the map's Coffee filters hidden. */
+export const getCoffeeTagNames = cache(async (): Promise<string[]> => {
+  "use cache";
+  cacheLife("hours");
+
+  const supabase = createAnonClient();
+  const { data, error } = await supabase
+    .from("tags")
+    .select("name")
+    .eq("is_active", true)
+    .eq("category", "coffee");
+
+  if (error) throw error;
+  return (data ?? []).map((row) => row.name);
+});
+
 export type SearchCafesArgs = {
   query?: string;
   tagNames?: string[];

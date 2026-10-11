@@ -14,11 +14,12 @@ import { getTagIcon } from "@/lib/utils/tag-icon";
 
 // Hardcoded filter labels — mirrors the nook-mobile map filter sheet
 // (`map_filter_content.dart`). Keep these in sync with the mobile app.
+// Tags no cafe has (Book Cafe, Open 24 Hours) are not offered: an empty
+// filter is a dead end (COFFEE_VOICE.md §2.2).
 export const BEST_FOR_LABELS = [
   "Date Spot",
   "Solo Work / Study",
   "Group Hangout",
-  "Book Cafe",
   "Late Night",
   "Quick Coffee",
   "Family Friendly",
@@ -41,7 +42,6 @@ export const AMENITY_LABELS = [
   "Wheelchair Accessible",
   "Takeaway Available",
   "Smoking Area",
-  "Open 24 Hours",
   "Pet Friendly",
 ];
 
@@ -65,6 +65,9 @@ export const SORT_OPTIONS: { id: SortId; label: string; icon: Icon }[] = [
 type Props = {
   onClose: () => void;
   initialTags: string[];
+  /** The coffee tags that exist, in order (`coffeeFilterLabels`). Empty
+   * before the coffee migration, and then there is no Coffee section. */
+  coffeeLabels?: string[];
   onApply: (tags: string[]) => void;
   onClearAll: () => void;
   /** Live result count for a draft selection, or null when it can't be known
@@ -84,6 +87,7 @@ type Props = {
 export default function MapFilterModal({
   onClose,
   initialTags,
+  coffeeLabels = [],
   onApply,
   onClearAll,
   previewCount,
@@ -147,6 +151,11 @@ export default function MapFilterModal({
           <FilterSection title="Best for">
             <TagWrap labels={BEST_FOR_LABELS} selected={tags} onToggle={toggleTag} />
           </FilterSection>
+          {coffeeLabels.length > 0 ? (
+            <FilterSection title="Coffee">
+              <TagWrap labels={coffeeLabels} selected={tags} onToggle={toggleTag} />
+            </FilterSection>
+          ) : null}
           <FilterSection title="Payment accepted">
             <TagWrap labels={PAYMENT_LABELS} selected={tags} onToggle={toggleTag} />
           </FilterSection>

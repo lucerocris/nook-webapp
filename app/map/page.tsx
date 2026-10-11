@@ -2,7 +2,8 @@ import { Suspense } from "react";
 import type { Metadata } from "next";
 
 import MapExplorer from "@/app/components/MapExplorer";
-import { searchCafes } from "@/lib/data/search";
+import { getCoffeeTagNames, searchCafes } from "@/lib/data/search";
+import { coffeeFilterLabels } from "@/lib/utils/coffee-tags";
 import { BASE_OPEN_GRAPH } from "@/lib/seo/metadata";
 
 // Filtered views (?q=, ?tag=) are the same page with different pins; they all
@@ -73,7 +74,19 @@ async function MapContent({ searchParams }: Props) {
 
   // Initial paint uses the standard search fetch; once the map mounts it
   // re-fetches by viewport (radius when zoomed in, bounds when zoomed out).
-  const cafes = await searchCafes({ query, tagNames, limit: 100 });
+  // The coffee chips are an extra: if the lookup fails the map still loads,
+  // just without them.
+  const [cafes, coffeeTags] = await Promise.all([
+    searchCafes({ query, tagNames, limit: 100 }),
+    getCoffeeTagNames().catch(() => [] as string[]),
+  ]);
 
-  return <MapExplorer initialCafes={cafes} query={query} tags={tagNames} />;
+  return (
+    <MapExplorer
+      initialCafes={cafes}
+      query={query}
+      tags={tagNames}
+      coffeeLabels={coffeeFilterLabels(coffeeTags)}
+    />
+  );
 }

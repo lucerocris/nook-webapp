@@ -10,6 +10,7 @@ import NearYou from "./components/NearYou";
 import {
   getHomeFeed,
   LAPTOP_FRIENDLY_TAGS,
+  LOCAL_BEANS_TAG,
   SPECIALTY_COFFEE_TAG,
 } from "@/lib/data/cafes";
 import { getCurrentUserId } from "@/lib/data/auth";
@@ -93,7 +94,8 @@ async function HomeFeed({ searchParams }: Props) {
     feed.trendingCafes.length === 0 &&
     feed.topRatedCafes.length === 0 &&
     feed.specialtyNearbyCafes.length === 0 &&
-    feed.laptopFriendlyCafes.length === 0;
+    feed.laptopFriendlyCafes.length === 0 &&
+    feed.localBeansCafes.length === 0;
 
   if (allEmpty) {
     return (
@@ -125,6 +127,13 @@ async function HomeFeed({ searchParams }: Props) {
         subtitle="Tagged by the Nook team, closest first"
         cafes={feed.specialtyNearbyCafes}
         href={`/map?tags=${encodeURIComponent(SPECIALTY_COFFEE_TAG)}`}
+      />
+      {/* Hidden by getHomeFeed until three cafes have the tag. */}
+      <CafeShelf
+        title="Local beans"
+        subtitle="Brewing Philippine coffee"
+        cafes={feed.localBeansCafes}
+        href={`/map?tags=${encodeURIComponent(LOCAL_BEANS_TAG)}`}
       />
       <CafeShelf
         title="Fresh on Nook"

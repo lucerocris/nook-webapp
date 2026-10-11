@@ -9,6 +9,7 @@ import CafeDetailSkeleton from "@/app/components/CafeDetailSkeleton";
 import CafeGallery from "@/app/components/CafeGallery";
 import CafeStickyBar from "@/app/components/CafeStickyBar";
 import CafeAmenities from "@/app/components/cafe/CafeAmenities";
+import { groupCafeTags } from "@/lib/utils/coffee-tags";
 import CafeHeading from "@/app/components/cafe/CafeHeading";
 import CafeInfoPanel from "@/app/components/cafe/CafeInfoPanel";
 import CafeLocation from "@/app/components/cafe/CafeLocation";
@@ -199,11 +200,7 @@ async function CafeDetailContent({ params }: Props) {
               <section id="offers">
                 <SectionTitle>What this cafe offers</SectionTitle>
                 <div className="mt-6">
-                  <CafeAmenities
-                    amenities={cafe.tags.filter((tag) => tag.category === "amenities")}
-                    bestFor={cafe.tags.filter((tag) => tag.category === "best_for")}
-                    payment={cafe.tags.filter((tag) => tag.category === "payment")}
-                  />
+                  <CafeAmenities {...groupCafeTags(cafe.tags)} />
                 </div>
               </section>
 

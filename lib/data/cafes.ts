@@ -14,6 +14,11 @@ import {
   type CafeSummary,
   type MenuItem,
 } from "./cafes-mappers";
+import {
+  LOCAL_BEANS_TAG,
+  localBeansShelf,
+  SPECIALTY_COFFEE_TAG,
+} from "@/lib/utils/coffee-tags";
 
 type AnonClient = ReturnType<typeof createSupabaseClient<Database>>;
 
@@ -66,11 +71,14 @@ export type HomeFeed = {
   specialtyNearbyCafes: CafeSummary[];
   /** Cafes with both Free WiFi and Power Outlets. */
   laptopFriendlyCafes: CafeSummary[];
+  /** Philippine Beans cafes, closest first with a position, top rated
+   * without. Empty below three (and before the coffee tags exist). */
+  localBeansCafes: CafeSummary[];
 };
 
-/** The existing tag behind "Specialty coffee near you". Tag names are the
- * filter keys, so this must match `tags.name` exactly. */
-export const SPECIALTY_COFFEE_TAG = "Specialty Coffee";
+/** The tags behind "Specialty coffee near you" and "Local beans" (defined
+ * with the other coffee tags). Tag names are the filter keys. */
+export { LOCAL_BEANS_TAG, SPECIALTY_COFFEE_TAG };
 
 /** "Laptop-friendly" is derived: `get_cafes` matches every tag it is given,
  * so these two together are the shelf. */
@@ -121,7 +129,7 @@ export const getHomeFeed = cache(
     const includeNearby =
       typeof args.lat === "number" && typeof args.lng === "number";
 
-    const [topRated, trending, newest, nearby, specialty, laptop] =
+    const [topRated, trending, newest, nearby, specialty, laptop, beans] =
       await Promise.all([
         fetchCafesBySort(supabase, "top_rated", args),
         fetchCafesBySort(supabase, "trending", args),
@@ -139,6 +147,13 @@ export const getHomeFeed = cache(
           args,
           LAPTOP_FRIENDLY_TAGS,
         ),
+        // "Local beans" makes no distance claim, so it shows either way.
+        fetchCafesBySort(
+          supabase,
+          includeNearby ? "nearby" : "top_rated",
+          args,
+          [LOCAL_BEANS_TAG],
+        ),
       ]);
 
     const allTopRated = topRated.map(mapCafeSummary);
@@ -147,6 +162,7 @@ export const getHomeFeed = cache(
     const nearbyCafes = nearby.map(mapCafeSummary);
     const specialtyNearbyCafes = specialty.map(mapCafeSummary);
     const laptopFriendlyCafes = laptop.map(mapCafeSummary);
+    const localBeansCafes = localBeansShelf(beans.map(mapCafeSummary));
 
     // "Highest rated" drops thinly reviewed cafes and hides below three.
     // "Crowd favorites" (rating weighted by review volume, no time window)
@@ -177,6 +193,7 @@ export const getHomeFeed = cache(
       nearbyCafes,
       specialtyNearbyCafes,
       laptopFriendlyCafes,
+      localBeansCafes,
     };
   },
 );

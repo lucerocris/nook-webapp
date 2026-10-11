@@ -7,20 +7,26 @@ import type { Tag } from "@/lib/data/cafes-mappers";
 import { getTagIcon } from "@/lib/utils/tag-icon";
 
 const PREVIEW = 8;
+/** Coffee tags in the preview before the amenities, so Wi-Fi and outlets
+ * still make the first eight. The rest are behind "Show all". */
+const PREVIEW_COFFEE = 4;
 
 type Group = { title: string; items: Tag[] };
 
 /**
  * What the cafe offers (Airbnb's section): the first eight tags, featured
- * first, as a two-column icon + label grid, then "Show all N" when there are
- * more. The dialog lists everything in one column per group, each under its
- * own heading (Trip's list, repeated per group).
+ * first, then up to four coffee tags, as a two-column icon + label grid, then
+ * "Show all N" when there are more. The dialog lists everything in one column
+ * per group, each under its own heading (Trip's list, repeated per group),
+ * Coffee first. Without coffee tags it is the section it was before them.
  */
 export default function CafeAmenities({
+  coffee = [],
   amenities,
   bestFor,
   payment,
 }: {
+  coffee?: Tag[];
   amenities: Tag[];
   bestFor: Tag[];
   payment: Tag[];
@@ -30,13 +36,19 @@ export default function CafeAmenities({
   const titleId = useId();
 
   const groups: Group[] = [
+    { title: "Coffee", items: coffee },
     { title: "Amenities", items: amenities },
     { title: "Best for", items: bestFor },
     { title: "Payment", items: payment },
   ].filter((g) => g.items.length > 0);
 
-  const all = [...amenities, ...bestFor, ...payment];
-  const preview = [...all.filter((t) => t.isFeatured), ...all.filter((t) => !t.isFeatured)].slice(0, PREVIEW);
+  const all = [...coffee, ...amenities, ...bestFor, ...payment];
+  const featured = all.filter((t) => t.isFeatured);
+  const preview = [
+    ...featured,
+    ...coffee.filter((t) => !t.isFeatured).slice(0, PREVIEW_COFFEE),
+    ...[...amenities, ...bestFor, ...payment].filter((t) => !t.isFeatured),
+  ].slice(0, PREVIEW);
   const total = all.length;
   const hasMore = total > preview.length;
 

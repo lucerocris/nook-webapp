@@ -29,6 +29,8 @@ type Props = {
   initialCafes: CafeSummary[];
   query?: string;
   tags?: string[];
+  /** Coffee filter chips to offer: the coffee tags that exist. */
+  coffeeLabels?: string[];
 };
 
 // When the whole visible area fits inside this radius we fetch a fixed circle
@@ -36,7 +38,7 @@ type Props = {
 const RADIUS_METERS = 20000; // 20 km
 const MOVE_DEBOUNCE_MS = 300;
 
-export default function MapExplorer({ initialCafes, query, tags }: Props) {
+export default function MapExplorer({ initialCafes, query, tags, coffeeLabels = [] }: Props) {
   // Which surface is showing below `lg`. Held in the URL rather than component
   // state, the way Fresha does it (`?mode=map`): the browser Back button
   // returns from the map to the list, and a map view can be linked. At `lg`
@@ -418,6 +420,7 @@ export default function MapExplorer({ initialCafes, query, tags }: Props) {
         <MapFilterModal
           onClose={() => setFilterOpen(false)}
           initialTags={activeTags}
+          coffeeLabels={coffeeLabels}
           onApply={applyFilters}
           onClearAll={clearFilters}
           previewCount={previewCount}
