@@ -4,14 +4,19 @@ import GetAppButton from "@/app/components/profile/GetAppButton";
 import ShareButton from "@/app/components/ShareButton";
 import type { PublicProfile } from "@/lib/data/profiles";
 
-/** "8 cups · 4 reviews · 6 cafes ranked", for meta descriptions. Hidden and
- * zero parts are left out, except reviews. */
-export function countsLine(counts: PublicProfile["counts"]): string {
-  const { ranked, reviews, cups } = counts;
+const n = (value: number, one: string, many = `${one}s`) =>
+  `${value.toLocaleString("en-US")} ${value === 1 ? one : many}`;
+
+/** "5 cups · 9 photos · 6 cafes ranked", for meta descriptions. A cup is a
+ * visit (COFFEE_VOICE rule 5), so cups are only counted when the visits are
+ * known (`visits`); before the Cups RPCs it is "4 reviews · 9 photos".
+ * Hidden and zero parts are left out, except the first. */
+export function countsLine(counts: PublicProfile["counts"], visits: number | null = null): string {
+  const { ranked, reviews, photos } = counts;
   return [
-    cups ? `${cups} ${cups === 1 ? "cup" : "cups"}` : null,
-    `${reviews} ${reviews === 1 ? "review" : "reviews"}`,
-    ranked ? `${ranked} ${ranked === 1 ? "cafe" : "cafes"} ranked` : null,
+    visits !== null ? n(visits, "cup") : n(reviews, "review"),
+    photos ? n(photos, "photo") : null,
+    ranked ? `${n(ranked, "cafe")} ranked` : null,
   ]
     .filter(Boolean)
     .join(" · ");
@@ -20,18 +25,29 @@ export function countsLine(counts: PublicProfile["counts"]): string {
 /**
  * Who this is, centred (the app's profile v2 header; Windy's count row,
  * Pinterest's letter avatar and pill pair; docs/references/public-profile):
- * avatar, name, @handle, then Ranked · Reviews · Cups as equal columns, the
- * bio, and two actions. With the gallery switched off only Reviews is
- * counted: ranked and cups are not sent.
+ * avatar, name, @handle, then Ranked · Cups · Photos as equal columns (Reviews in place of Cups before the Cups RPCs), the
+ * bio, and two actions. With the gallery switched off, ranked and photos
+ * are not sent.
  */
-export default function ProfileHeader({ profile }: { profile: PublicProfile }) {
+export default function ProfileHeader({
+  profile,
+  visits = null,
+}: {
+  profile: PublicProfile;
+  /** Their cups (visits) when the Cups RPCs answer; reviews are among them. */
+  visits?: number | null;
+}) {
   const { counts } = profile;
   const stats = [
     // "0 Ranked" reads as a verdict on the person, so it shows from one, as
     // in the app.
     counts.ranked ? { label: "Ranked", value: counts.ranked } : null,
-    { label: counts.reviews === 1 ? "Review" : "Reviews", value: counts.reviews },
-    counts.cups !== null ? { label: counts.cups === 1 ? "Cup" : "Cups", value: counts.cups } : null,
+    visits !== null
+      ? { label: visits === 1 ? "Cup" : "Cups", value: visits }
+      : { label: counts.reviews === 1 ? "Review" : "Reviews", value: counts.reviews },
+    counts.photos !== null
+      ? { label: counts.photos === 1 ? "Photo" : "Photos", value: counts.photos }
+      : null,
   ].filter((s): s is { label: string; value: number } => s !== null);
 
   return (

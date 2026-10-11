@@ -15,7 +15,16 @@ import RatingStars from "./RatingStars";
  * clamped with "Show more", then the photos edge to edge with what each one
  * is, and anything had without a photo as small chips.
  */
-export default function CupCard({ cup, shownPhotos = 3 }: { cup: Cup; shownPhotos?: number }) {
+export default function CupCard({
+  cup,
+  shownPhotos = 3,
+  showAuthor = true,
+}: {
+  cup: Cup;
+  shownPhotos?: number;
+  /** Off on a profile, where the author is the page. */
+  showAuthor?: boolean;
+}) {
   const [expanded, setExpanded] = useState(false);
   const [overflows, setOverflows] = useState(false);
   const noteRef = useRef<HTMLParagraphElement>(null);
@@ -46,7 +55,7 @@ export default function CupCard({ cup, shownPhotos = 3 }: { cup: Cup; shownPhoto
 
   return (
     <article className="min-w-0">
-      {cup.username ? (
+      {!showAuthor ? null : cup.username ? (
         <Link
           href={`/u/${cup.username}`}
           className="group flex w-fit max-w-full items-center gap-3 rounded-lg focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand"
@@ -57,7 +66,7 @@ export default function CupCard({ cup, shownPhotos = 3 }: { cup: Cup; shownPhoto
         <div className="flex items-center gap-3">{author}</div>
       )}
 
-      <div className="mt-3 flex items-center gap-2 text-xs text-muted">
+      <div className={cn("flex items-center gap-2 text-xs text-muted", showAuthor && "mt-3")}>
         {cup.rating !== null ? (
           <>
             <RatingStars rating={cup.rating} size={12} />

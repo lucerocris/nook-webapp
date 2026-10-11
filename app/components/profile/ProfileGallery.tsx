@@ -8,7 +8,7 @@ import PhotoViewer from "@/app/components/profile/PhotoViewer";
 import type { PublicPhoto } from "@/lib/data/profiles";
 
 /**
- * The coffee gallery: three columns of 4:5 photos in a hairline gutter
+ * Their photos (the gallery): three columns of 4:5 photos in a hairline gutter
  * (Instagram's profile grid; docs/references/public-profile), edge to edge on
  * phones. Each tile names the cafe it was taken at, so the grid reads as
  * where this person drinks coffee. Pinned photos come first with a badge.
@@ -31,7 +31,7 @@ export default function ProfileGallery({
         <span className="flex size-12 items-center justify-center rounded-full bg-paper text-muted">
           <Coffee size={22} aria-hidden />
         </span>
-        <p className="mt-3 text-[15px] font-semibold text-ink">No cups yet</p>
+        <p className="mt-3 text-[15px] font-semibold text-ink">No photos yet</p>
         <p className="mt-1 max-w-[36ch] text-sm text-muted">
           When {firstName} snaps a coffee at a cafe in the app, it shows up here.
         </p>

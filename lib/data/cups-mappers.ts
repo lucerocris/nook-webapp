@@ -173,6 +173,60 @@ export function mapCafeCupsPayload(raw: Raw): CafeCups {
   };
 }
 
+// ── Profile: a person's cups, by cafe ────────────────────────────────────
+
+export type ProfileCupsCafe = {
+  cafeId: string;
+  cafeName: string;
+  cafeArea: string | null;
+  cafeImageUrl: string | null;
+  visitCount: number;
+  lastVisitedAt: string | null;
+  latestRating: number | null;
+  /** Newest first, at most 10 (the RPC's cap). */
+  cups: CupCard[];
+};
+
+export type ProfileCups = {
+  counts: {
+    cups: number;
+    cafes: number;
+    /** null when their photos are private. */
+    photos: number | null;
+  };
+  /** Most recently visited first. */
+  cafes: ProfileCupsCafe[];
+};
+
+/** `get_profile_cups` → domain. With the photos switch off the server sends
+ * only rated or noted visits, without photos, and a null photo count. */
+export function mapProfileCups(raw: Raw): ProfileCups {
+  const counts = (raw.counts && typeof raw.counts === "object" ? raw.counts : {}) as Raw;
+  const cafes = Array.isArray(raw.cafes) ? (raw.cafes as Raw[]) : [];
+  return {
+    counts: {
+      cups: num(counts.cups) ?? 0,
+      cafes: num(counts.cafes) ?? 0,
+      photos: num(counts.photos),
+    },
+    cafes: cafes
+      .filter((c) => str(c.cafe_id) && str(c.cafe_name))
+      .map((c) => {
+        const cups = Array.isArray(c.cups) ? (c.cups as Raw[]).map(mapCupCard) : [];
+        return {
+          cafeId: String(c.cafe_id),
+          cafeName: String(c.cafe_name),
+          cafeArea: str(c.cafe_area),
+          cafeImageUrl: str(c.cafe_image_url),
+          visitCount: Math.max(num(c.visit_count) ?? cups.length, cups.length),
+          lastVisitedAt: str(c.last_visited_at),
+          latestRating: num(c.latest_rating),
+          cups,
+        };
+      }),
+  };
+}
+
 // ── Legacy fallback: a review is one visit ───────────────────────────────
 
 export type LegacyReviewRow = {

@@ -6,6 +6,7 @@ import { cacheLife } from "next/cache";
 import { createClient as createSupabaseClient } from "@supabase/supabase-js";
 
 import type { CafeRpcRow, Database, PublicProfileRpc } from "@/lib/supabase/types";
+import { isMissingRpcError, mapProfileCups, type ProfileCups } from "./cups-mappers";
 
 export type PublicPhoto = {
   id: string;
@@ -44,7 +45,9 @@ export type PublicProfile = {
   bio: string | null;
   /** The owner's "Show my gallery on my profile" switch. */
   galleryPublic: boolean;
-  counts: { reviews: number; ranked: number | null; cups: number | null };
+  /** `photos`: their gallery photos (the RPC calls it `cups`, from before a
+   * cup meant a visit). null when the gallery is private. */
+  counts: { reviews: number; ranked: number | null; photos: number | null };
   photos: PublicPhoto[];
   reviews: PublicReview[];
 };
@@ -85,7 +88,7 @@ export function mapPublicProfile(row: PublicProfileRpc): PublicProfile {
     counts: {
       reviews: row.counts?.reviews ?? row.reviews?.length ?? 0,
       ranked: open ? (row.counts?.ranked ?? null) : null,
-      cups: open ? (row.counts?.cups ?? null) : null,
+      photos: open ? (row.counts?.cups ?? null) : null,
     },
     // Belt and braces: the RPC already sends none when the switch is off.
     photos: open
@@ -204,7 +207,7 @@ async function fakeProfile(username: string): Promise<PublicProfile | null> {
     avatarUrl: null,
     bio: v.bio,
     galleryPublic: v.open,
-    counts: { reviews: reviews.length, ranked: v.open ? 18 : null, cups: v.open ? photos.length : null },
+    counts: { reviews: reviews.length, ranked: v.open ? 18 : null, photos: v.open ? photos.length : null },
     photos,
     reviews,
   };
@@ -240,5 +243,31 @@ export const getPublicProfile = cache(
       throw error;
     }
     return data ? mapPublicProfile(data as PublicProfileRpc) : null;
+  },
+);
+
+/**
+ * A person's cups (visits), grouped by cafe, through `get_profile_cups`; or
+ * null where the Cups RPCs aren't on this database yet, so the page keeps
+ * its pre-Cups layout (Photos and Reviews). Read as anon like the profile.
+ */
+export const getProfileCups = cache(
+  async (username: string): Promise<ProfileCups | null> => {
+    "use cache";
+    cacheLife("minutes");
+
+    if (!isUsername(username)) return null;
+    if (fakeEnabled() && username.toLowerCase().startsWith("fake_")) return null;
+
+    const { data, error } = await createAnonClient().rpc(
+      // Not in the generated types until the Cups migrations are.
+      "get_profile_cups" as never,
+      { p_username: username } as never,
+    );
+    if (error) {
+      if (isMissingRpcError(error)) return null;
+      throw error;
+    }
+    return data ? mapProfileCups(data as Record<string, unknown>) : null;
   },
 );

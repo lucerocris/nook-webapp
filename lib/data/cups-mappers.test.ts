@@ -13,6 +13,7 @@ import {
   relativeVisitDate,
   reviewToCup,
   countCupsByKind,
+  mapProfileCups,
   cupHasKind,
   type CafeCups,
 } from "./cups-mappers.ts";
@@ -216,4 +217,32 @@ test("kind chips count cups that contain the kind, not photos", () => {
     posted("c", ["coffee", "coffee"], "review", true),
   ]);
   assert.deepEqual(counts, { coffee: 1, drink: 1, food: 1, space: 0 });
+});
+
+test("a profile's cups are visits grouped by cafe; private photos stay null", () => {
+  const profile = mapProfileCups({
+    counts: { cups: 3, cafes: 2, photos: null },
+    cafes: [
+      {
+        cafe_id: "c1",
+        cafe_name: "Brindle",
+        cafe_area: "Lahug, Cebu City",
+        cafe_image_url: null,
+        visit_count: 2,
+        last_visited_at: "2026-10-09",
+        latest_rating: 4,
+        cups: [
+          { id: "v2", source: "cup", user_id: "u", rating: 4, note: "Again", visited_at: "2026-10-09", items: [] },
+          { id: "v1", source: "review", is_virtual: true, user_id: "u", rating: 5, note: "Good", visited_at: "2026-08-03" },
+        ],
+      },
+      { cafe_id: "c2", cafe_name: "Hom Cafe", visit_count: 1, cups: [] },
+      { cafe_id: null, cafe_name: "dropped" },
+    ],
+  });
+  assert.deepEqual(profile.counts, { cups: 3, cafes: 2, photos: null });
+  assert.equal(profile.cafes.length, 2);
+  assert.equal(profile.cafes[0].visitCount, 2);
+  assert.equal(profile.cafes[0].cups[1].source, "review");
+  assert.equal(profile.cafes[1].cafeArea, null);
 });

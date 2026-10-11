@@ -2,7 +2,7 @@ import { readFile } from "node:fs/promises";
 import { join } from "node:path";
 import { ImageResponse } from "next/og";
 
-import { getPublicProfile } from "@/lib/data/profiles";
+import { getProfileCups, getPublicProfile } from "@/lib/data/profiles";
 
 export const alt = "Profile on Nook: name, counts and coffee photos";
 export const size = { width: 1200, height: 630 };
@@ -72,10 +72,14 @@ export default async function Image({ params }: { params: Promise<{ username: st
   const big = photos.length <= 3;
   const tile = big ? { w: 180, h: 225 } : { w: 168, h: 210 };
 
+  // A cup is a visit; photos are photos. Cups only once the visits are known.
+  const visits = (await getProfileCups(profile.username).catch(() => null))?.counts.cups ?? null;
   const { counts } = profile;
   const stats = [
-    counts.cups ? `${counts.cups} ${counts.cups === 1 ? "cup" : "cups"}` : null,
-    `${counts.reviews} ${counts.reviews === 1 ? "review" : "reviews"}`,
+    visits !== null
+      ? `${visits} ${visits === 1 ? "cup" : "cups"}`
+      : `${counts.reviews} ${counts.reviews === 1 ? "review" : "reviews"}`,
+    counts.photos ? `${counts.photos} ${counts.photos === 1 ? "photo" : "photos"}` : null,
     counts.ranked ? `${counts.ranked} ranked` : null,
   ]
     .filter(Boolean)
