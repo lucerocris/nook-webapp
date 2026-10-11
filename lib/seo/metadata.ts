@@ -13,3 +13,31 @@ export const BASE_OPEN_GRAPH = {
   title: SITE_TITLE,
   description: SITE_DESCRIPTION,
 } satisfies Metadata["openGraph"];
+
+/** Share tags for a page under a cafe (its cups, what it offers): the page's
+ * own title and copy with the cafe's photo, instead of the layout's site-wide
+ * defaults. */
+export function cafeShareMetadata({
+  title,
+  description,
+  path,
+  cafe,
+}: {
+  title: string;
+  description: string;
+  path: string;
+  cafe: { name: string; featuredImageUrl: string | null };
+}): Pick<Metadata, "openGraph" | "twitter"> {
+  const images = cafe.featuredImageUrl
+    ? [{ url: cafe.featuredImageUrl, alt: cafe.name }]
+    : undefined;
+  return {
+    openGraph: { ...BASE_OPEN_GRAPH, title, description, url: path, images },
+    twitter: {
+      card: images ? "summary_large_image" : "summary",
+      title,
+      description,
+      images,
+    },
+  };
+}

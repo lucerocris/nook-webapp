@@ -8,6 +8,7 @@ import CafeDetailSkeleton from "@/app/components/CafeDetailSkeleton";
 import Footer from "@/app/components/Footer";
 import { getCafeById } from "@/lib/data/cafes";
 import { SITE_URL as siteUrl } from "@/lib/env";
+import { cafeShareMetadata } from "@/lib/seo/metadata";
 import type { Tag } from "@/lib/data/cafes-mappers";
 import { coffeeTagHint, groupCafeTags, tagSections } from "@/lib/utils/coffee-tags";
 import { getTagIcon } from "@/lib/utils/tag-icon";
@@ -32,12 +33,15 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
     .slice(0, 5)
     .map((t) => t.name);
 
+  const title = `What ${cafe.name} offers`;
+  const description = sample.length
+    ? `${sample.join(", ")} and more at ${cafe.name}, on Nook.`
+    : `Coffee, amenities and payment options at ${cafe.name}, on Nook.`;
   return {
-    title: `What ${cafe.name} offers`,
-    description: sample.length
-      ? `${sample.join(", ")} and more at ${cafe.name}, on Nook.`
-      : `Coffee, amenities and payment options at ${cafe.name}, on Nook.`,
+    title,
+    description,
     alternates: { canonical: `${siteUrl}/cafes/${id}/offers` },
+    ...cafeShareMetadata({ title, description, path: `/cafes/${id}/offers`, cafe }),
   };
 }
 

@@ -13,6 +13,7 @@ import { getCafeById } from "@/lib/data/cafes";
 import { CUPS_PAGE_SIZE, getCafeCups } from "@/lib/data/cups";
 import { parseCupsQuery, plural, type CupSort, type CupsQuery } from "@/lib/data/cups-mappers";
 import { SITE_URL as siteUrl } from "@/lib/env";
+import { cafeShareMetadata } from "@/lib/seo/metadata";
 import { cn } from "@/lib/utils";
 
 type Props = {
@@ -34,10 +35,13 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { id } = await params;
   const cafe = await getCafeById(id, { includeReviews: false });
   if (!cafe) return { title: "Cups", robots: { index: false } };
+  const title = `${cafe.name} cups`;
+  const description = `What people had at ${cafe.name}: photos, notes and ratings from their visits, on Nook.`;
   return {
-    title: `${cafe.name} cups`,
-    description: `What people had at ${cafe.name}: photos, notes and ratings from their visits, on Nook.`,
+    title,
+    description,
     alternates: { canonical: `${siteUrl}/cafes/${id}/cups` },
+    ...cafeShareMetadata({ title, description, path: `/cafes/${id}/cups`, cafe }),
   };
 }
 
