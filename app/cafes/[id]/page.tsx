@@ -200,7 +200,7 @@ async function CafeDetailContent({ params }: Props) {
               <section id="offers">
                 <SectionTitle>What this cafe offers</SectionTitle>
                 <div className="mt-6">
-                  <CafeAmenities {...groupCafeTags(cafe.tags)} />
+                  <CafeAmenities cafeId={id} groups={groupCafeTags(cafe.tags)} />
                 </div>
               </section>
 

@@ -5,8 +5,12 @@ import type { Tag } from "../data/cafes-mappers";
 import {
   COFFEE_TAG_NAMES,
   coffeeFilterLabels,
+  coffeeTagHint,
   groupCafeTags,
   localBeansShelf,
+  previewTags,
+  tagSections,
+  tagTotal,
 } from "./coffee-tags.ts";
 
 const tag = (name: string, category: string, isFeatured = false): Tag => ({
@@ -61,4 +65,102 @@ test("without coffee tags the groups are what they were", () => {
   const groups = groupCafeTags([tag("Specialty Coffee", "best_for"), tag("Free WiFi", "amenities")]);
   assert.deepEqual(groups.coffee, []);
   assert.deepEqual(names(groups.bestFor), ["Specialty Coffee"]);
+});
+
+const many = groupCafeTags([
+  tag("Free WiFi", "amenities"),
+  tag("Parking Available", "amenities"),
+  tag("Smoking Area", "amenities"),
+  tag("Power Outlets", "amenities"),
+  tag("Air Conditioned", "amenities"),
+  tag("Date Spot", "best_for"),
+  tag("Group Hangout", "best_for", true),
+  tag("Specialty Coffee", "best_for", true),
+  tag("Late Night", "best_for"),
+  tag("Matcha", "coffee"),
+  tag("Pour-over", "coffee"),
+  tag("Espresso", "coffee"),
+  tag("Cash", "payment"),
+  tag("Card", "payment"),
+]);
+
+test("preview: two each from Coffee, Best for and Amenities, in that order", () => {
+  assert.deepEqual(names(previewTags(many)), [
+    "Specialty Coffee",
+    "Espresso",
+    "Group Hangout",
+    "Date Spot",
+    "Free WiFi",
+    "Power Outlets",
+  ]);
+  assert.equal(tagTotal(many), 14);
+});
+
+test("preview: a short group gives its places to the others", () => {
+  const groups = groupCafeTags([
+    tag("Free WiFi", "amenities"),
+    tag("Power Outlets", "amenities"),
+    tag("Air Conditioned", "amenities"),
+    tag("Outdoor Seating", "amenities"),
+    tag("Pet Friendly", "amenities"),
+    tag("Solo Work / Study", "best_for"),
+    tag("Cash", "payment"),
+  ]);
+  assert.deepEqual(names(previewTags(groups)), [
+    "Solo Work / Study",
+    "Free WiFi",
+    "Power Outlets",
+    "Air Conditioned",
+    "Outdoor Seating",
+    "Pet Friendly",
+  ]);
+});
+
+test("preview: before the coffee tags it is Best for and Amenities", () => {
+  const groups = groupCafeTags([
+    tag("Specialty Coffee", "best_for", true),
+    tag("Quick Coffee", "best_for"),
+    tag("Date Spot", "best_for"),
+    tag("Free WiFi", "amenities"),
+    tag("Parking Available", "amenities"),
+    tag("Air Conditioned", "amenities"),
+    tag("Cash", "payment"),
+  ]);
+  assert.deepEqual(names(previewTags(groups)), [
+    "Specialty Coffee",
+    "Quick Coffee",
+    "Date Spot",
+    "Free WiFi",
+    "Air Conditioned",
+    "Parking Available",
+  ]);
+});
+
+test("preview: payments only fill what nothing else can; few tags show all", () => {
+  const groups = groupCafeTags([
+    tag("Free WiFi", "amenities"),
+    tag("Cash", "payment"),
+    tag("Card", "payment"),
+  ]);
+  assert.deepEqual(names(previewTags(groups)), ["Free WiFi", "Cash", "Card"]);
+  assert.deepEqual(previewTags(groupCafeTags([])), []);
+});
+
+test("sections: Coffee, Best for, Amenities, Payment; empty ones left out", () => {
+  assert.deepEqual(
+    tagSections(many).map((s) => s.title),
+    ["Coffee", "Best for", "Amenities", "Payment"],
+  );
+  const noCoffee = groupCafeTags([tag("Free WiFi", "amenities"), tag("Cash", "payment")]);
+  assert.deepEqual(
+    tagSections(noCoffee).map((s) => s.title),
+    ["Amenities", "Payment"],
+  );
+});
+
+test("every coffee tag has a customer line; other tags do not", () => {
+  for (const name of [...COFFEE_TAG_NAMES, "Specialty Coffee"]) {
+    assert.ok(coffeeTagHint(name), name);
+  }
+  assert.equal(coffeeTagHint("free wifi"), null);
 });
