@@ -100,7 +100,7 @@ async function CafeReviewRender({ params }: Props) {
                   className="mt-4 flex h-11 w-full items-center justify-center gap-2 rounded-full bg-ink text-sm font-medium text-white transition-colors hover:bg-brand"
                 >
                   <PencilSimple size={16} />
-                  Write a review in the app
+                  Add your cup in the app
                 </Link>
               </div>
             </div>

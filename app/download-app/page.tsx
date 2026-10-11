@@ -44,7 +44,7 @@ const features = [
   {
     icon: ListHeart,
     title: "Keep your lists",
-    body: "Save cafes to Want to Try, then rank the ones you have actually been to.",
+    body: "Save cafes to Want to try, then rank the ones you have actually been to.",
   },
 ];
 

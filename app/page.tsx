@@ -7,7 +7,11 @@ import CafeShelf from "./components/CafeShelf";
 import Footer from "./components/Footer";
 import Hero from "./components/Hero";
 import NearYou from "./components/NearYou";
-import { getHomeFeed } from "@/lib/data/cafes";
+import {
+  getHomeFeed,
+  LAPTOP_FRIENDLY_TAGS,
+  SPECIALTY_COFFEE_TAG,
+} from "@/lib/data/cafes";
 import { getCurrentUserId } from "@/lib/data/auth";
 import JsonLd from "./components/JsonLd";
 import { SITE_URL } from "@/lib/env";
@@ -66,7 +70,7 @@ export default function Home({ searchParams }: Props) {
       <JsonLd data={siteJsonLd} />
       <main className="flex-1">
         <Hero />
-        <Suspense fallback={<CafeRowSkeleton title="Featured" />}>
+        <Suspense fallback={<CafeRowSkeleton title="House picks" />}>
           <HomeFeed searchParams={searchParams} />
         </Suspense>
         <AppBand />
@@ -87,7 +91,9 @@ async function HomeFeed({ searchParams }: Props) {
     feed.featuredCafes.length === 0 &&
     feed.newestCafes.length === 0 &&
     feed.trendingCafes.length === 0 &&
-    feed.topRatedCafes.length === 0;
+    feed.topRatedCafes.length === 0 &&
+    feed.specialtyNearbyCafes.length === 0 &&
+    feed.laptopFriendlyCafes.length === 0;
 
   if (allEmpty) {
     return (
@@ -99,35 +105,49 @@ async function HomeFeed({ searchParams }: Props) {
     );
   }
 
-  // Where you are first, then the team's picks, the two rankings, and what
-  // is new. Every shelf is the same photo-card row (design.md, Rhythm).
+  // Where you are first, then the team's picks, coffee, what is new, and
+  // the two rankings (hidden until enough cafes have enough reviews). Titles
+  // stay plain; the coffee voice is in the subtitles (COFFEE_VOICE.md).
+  // Every shelf is the same photo-card row (design.md, Rhythm).
   return (
     <>
       <NearYou cafes={feed.nearbyCafes} hasLocation={hasLocation} />
       <CafeShelf
-        title="Featured"
-        subtitle="Picked by the Nook team"
+        title="House picks"
+        subtitle="Chosen by the Nook team"
         cafes={feed.featuredCafes}
-        badge="Featured"
+        badge="House pick"
         href="/map"
         priority={!hasLocation}
       />
       <CafeShelf
-        title="Top rated"
-        subtitle="Highest rated by the community"
-        cafes={feed.topRatedCafes}
+        title="Specialty coffee near you"
+        subtitle="Tagged by the Nook team, closest first"
+        cafes={feed.specialtyNearbyCafes}
+        href={`/map?tags=${encodeURIComponent(SPECIALTY_COFFEE_TAG)}`}
+      />
+      <CafeShelf
+        title="Fresh on Nook"
+        subtitle="Just added"
+        cafes={feed.newestCafes}
         href="/map"
       />
       <CafeShelf
-        title="Trending"
-        subtitle="Most visited and saved lately"
+        title="Laptop-friendly"
+        subtitle="Wi-Fi and outlets"
+        cafes={feed.laptopFriendlyCafes}
+        href={`/map?tags=${LAPTOP_FRIENDLY_TAGS.map(encodeURIComponent).join(",")}`}
+      />
+      <CafeShelf
+        title="Crowd favorites"
+        subtitle="Well rated by lots of people"
         cafes={feed.trendingCafes}
         href="/map"
       />
       <CafeShelf
-        title="New on Nook"
-        subtitle="Recently added cafes"
-        cafes={feed.newestCafes}
+        title="Highest rated"
+        subtitle="From people who've been"
+        cafes={feed.topRatedCafes}
         href="/map"
       />
     </>

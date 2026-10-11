@@ -57,8 +57,8 @@ export type SortId = "nearby" | "top_rated" | "trending" | "newest";
 
 export const SORT_OPTIONS: { id: SortId; label: string; icon: Icon }[] = [
   { id: "nearby", label: "Nearby", icon: MapPin },
-  { id: "top_rated", label: "Top rated", icon: Star },
-  { id: "trending", label: "Trending", icon: TrendUp },
+  { id: "top_rated", label: "Highest rated", icon: Star },
+  { id: "trending", label: "Crowd favorites", icon: TrendUp },
   { id: "newest", label: "Newest", icon: Sparkle },
 ];
 

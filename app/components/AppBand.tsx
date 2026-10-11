@@ -30,7 +30,7 @@ export default function AppBand() {
             </h2>
             <p className="mt-3 max-w-[46ch] text-[15px] leading-relaxed text-body sm:text-base">
               The app for iPhone and Android keeps the map in your pocket, saves cafes to Want to
-              Try, and ranks the ones you have been to.
+              try, and ranks the ones you have been to.
             </p>
             <StoreBadges className="mt-6" />
             <div className="mt-8 hidden items-center gap-4 lg:flex">

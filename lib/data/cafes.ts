@@ -62,7 +62,28 @@ export type HomeFeed = {
   trendingCafes: CafeSummary[];
   topRatedCafes: CafeSummary[];
   nearbyCafes: CafeSummary[];
+  /** Specialty Coffee cafes, closest first. Empty without a position. */
+  specialtyNearbyCafes: CafeSummary[];
+  /** Cafes with both Free WiFi and Power Outlets. */
+  laptopFriendlyCafes: CafeSummary[];
 };
+
+/** The existing tag behind "Specialty coffee near you". Tag names are the
+ * filter keys, so this must match `tags.name` exactly. */
+export const SPECIALTY_COFFEE_TAG = "Specialty Coffee";
+
+/** "Laptop-friendly" is derived: `get_cafes` matches every tag it is given,
+ * so these two together are the shelf. */
+export const LAPTOP_FRIENDLY_TAGS = ["Free WiFi", "Power Outlets"];
+
+/** Reviews a cafe needs before a rating-based shelf counts it. One 5-star
+ * review is not a ranking (COFFEE_VOICE.md, accuracy rules). */
+export const MIN_SHELF_REVIEWS = 3;
+
+function wellReviewed(cafes: CafeSummary[], minCafes: number): CafeSummary[] {
+  const rated = cafes.filter((c) => c.reviewCount >= MIN_SHELF_REVIEWS);
+  return rated.length >= minCafes ? rated : [];
+}
 
 export type GetHomeFeedArgs = {
   userId?: string;
@@ -75,12 +96,13 @@ async function fetchCafesBySort(
   supabase: AnonClient,
   sort: string,
   args: GetHomeFeedArgs,
+  tagNames: string[] | null = null,
 ): Promise<CafeRpcRow[]> {
   const { data, error } = await supabase.rpc("get_cafes", {
     p_query: null,
     p_user_id: args.userId ?? null,
     p_sort: sort,
-    p_tag_names: null,
+    p_tag_names: tagNames,
     p_lat: args.lat ?? null,
     p_lng: args.lng ?? null,
     p_limit: args.limit ?? DEFAULT_LIMIT,
@@ -99,24 +121,43 @@ export const getHomeFeed = cache(
     const includeNearby =
       typeof args.lat === "number" && typeof args.lng === "number";
 
-    const [topRated, trending, newest, nearby] = await Promise.all([
-      fetchCafesBySort(supabase, "top_rated", args),
-      fetchCafesBySort(supabase, "trending", args),
-      fetchCafesBySort(supabase, "newest", args),
-      includeNearby
-        ? fetchCafesBySort(supabase, "nearby", args)
-        : Promise.resolve([] as CafeRpcRow[]),
-    ]);
+    const [topRated, trending, newest, nearby, specialty, laptop] =
+      await Promise.all([
+        fetchCafesBySort(supabase, "top_rated", args),
+        fetchCafesBySort(supabase, "trending", args),
+        fetchCafesBySort(supabase, "newest", args),
+        includeNearby
+          ? fetchCafesBySort(supabase, "nearby", args)
+          : Promise.resolve([] as CafeRpcRow[]),
+        // "near you" is only true with a position, so no position, no shelf.
+        includeNearby
+          ? fetchCafesBySort(supabase, "nearby", args, [SPECIALTY_COFFEE_TAG])
+          : Promise.resolve([] as CafeRpcRow[]),
+        fetchCafesBySort(
+          supabase,
+          includeNearby ? "nearby" : "top_rated",
+          args,
+          LAPTOP_FRIENDLY_TAGS,
+        ),
+      ]);
 
-    const topRatedCafes = topRated.map(mapCafeSummary);
-    const trendingCafes = trending.map(mapCafeSummary);
+    const allTopRated = topRated.map(mapCafeSummary);
+    const allTrending = trending.map(mapCafeSummary);
     const newestCafes = newest.map(mapCafeSummary);
     const nearbyCafes = nearby.map(mapCafeSummary);
+    const specialtyNearbyCafes = specialty.map(mapCafeSummary);
+    const laptopFriendlyCafes = laptop.map(mapCafeSummary);
+
+    // "Highest rated" drops thinly reviewed cafes and hides below three.
+    // "Crowd favorites" (rating weighted by review volume, no time window)
+    // hides until five cafes qualify; below that it repeats House picks.
+    const topRatedCafes = wellReviewed(allTopRated, 3);
+    const trendingCafes = wellReviewed(allTrending, 5);
 
     const seen = new Set<string>();
     const featuredCafes = [
-      ...topRatedCafes,
-      ...trendingCafes,
+      ...allTopRated,
+      ...allTrending,
       ...newestCafes,
       ...nearbyCafes,
     ]
@@ -134,6 +175,8 @@ export const getHomeFeed = cache(
       trendingCafes,
       topRatedCafes,
       nearbyCafes,
+      specialtyNearbyCafes,
+      laptopFriendlyCafes,
     };
   },
 );

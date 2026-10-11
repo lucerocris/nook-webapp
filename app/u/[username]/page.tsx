@@ -115,7 +115,7 @@ export default async function PublicProfilePage({ params }: Props) {
                 tabs={[
                   // Icons like the app's profile tabs: grid for the gallery,
                   // a speech bubble for reviews.
-                  { id: "gallery", label: "Gallery", icon: <GridFour size={24} /> },
+                  { id: "gallery", label: "Cups", icon: <GridFour size={24} /> },
                   { id: "reviews", label: "Reviews", icon: <ChatCircleText size={24} /> },
                 ]}
                 className="top-16 mt-8 lg:top-16 lg:mx-0 lg:mt-10"
@@ -124,7 +124,7 @@ export default async function PublicProfilePage({ params }: Props) {
               <div className="[&>section]:scroll-mt-32">
                 <section id="gallery" aria-labelledby="gallery-title" className="pt-0.5 sm:pt-4">
                   <h2 id="gallery-title" className="sr-only">
-                    Gallery
+                    Cups
                   </h2>
                   <ProfileGallery photos={profile.photos} firstName={first} />
                 </section>
@@ -141,7 +141,7 @@ export default async function PublicProfilePage({ params }: Props) {
                   <LockSimple size={18} aria-hidden />
                 </span>
                 <span>
-                  <span className="block text-sm font-semibold text-ink">{first}&apos;s gallery is private</span>
+                  <span className="block text-sm font-semibold text-ink">{first}&apos;s cups are private</span>
                   <span className="block text-[13px] text-muted">Their reviews are public, below.</span>
                 </span>
               </div>
