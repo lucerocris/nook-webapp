@@ -31,7 +31,7 @@ type Props = {
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { id } = await params;
-  const cafe = await getCafeById(id);
+  const cafe = await getCafeById(id, { includeReviews: false });
 
   if (!cafe) {
     // `absolute` bypasses the root layout's "%s · Nook" template, which would
@@ -101,7 +101,7 @@ async function CafeDetailContent({ params }: Props) {
   const { id } = await params;
 
   const [cafe, menu] = await Promise.all([
-    getCafeById(id),
+    getCafeById(id, { includeReviews: false }),
     getMenuItems(id),
   ]);
 
