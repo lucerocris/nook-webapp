@@ -17,10 +17,13 @@ import RatingStars from "./RatingStars";
  */
 export default function CupCard({
   cup,
+  cafeName,
   shownPhotos = 3,
   showAuthor = true,
 }: {
   cup: Cup;
+  /** For the photos' alt text. */
+  cafeName: string;
   shownPhotos?: number;
   /** Off on a profile, where the author is the page. */
   showAuthor?: boolean;
@@ -108,7 +111,7 @@ export default function CupCard({
               <div className="relative aspect-[4/5] overflow-hidden rounded-xl bg-subtle">
                 <Image
                   src={item.photo!.imageUrl}
-                  alt={item.label ? `${item.label} at the cafe` : ""}
+                  alt={photoAlt(item.label, cafeName, cup)}
                   fill
                   sizes="(min-width: 1024px) 200px, 33vw"
                   className="object-cover"
@@ -150,6 +153,14 @@ export default function CupCard({
       ) : null}
     </article>
   );
+}
+
+/** "Spanish latte at Hom Cafe", or, for a photo nobody named, "Photo of Hom
+ * Cafe by @sai". */
+function photoAlt(label: string | null, cafeName: string, cup: Cup): string {
+  if (label) return `${label} at ${cafeName}`;
+  const by = cup.username ? `@${cup.username}` : cup.authorName;
+  return `Photo of ${cafeName} by ${by}`;
 }
 
 function Avatar({ name, url }: { name: string; url: string | null }) {

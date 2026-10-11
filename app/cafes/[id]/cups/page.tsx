@@ -8,6 +8,7 @@ import CafeDetailSkeleton from "@/app/components/CafeDetailSkeleton";
 import Footer from "@/app/components/Footer";
 import CupCard from "@/app/components/cafe/CupCard";
 import { AddCupPrompt, CupKindLinks, CupsSummary } from "@/app/components/cafe/CafeCups";
+import ScrollToActive from "@/app/components/cafe/ScrollToActive";
 import { CUP_KIND_LABEL } from "@/app/components/cafe/CupKindIcon";
 import { getCafeById } from "@/lib/data/cafes";
 import { CUPS_PAGE_SIZE, getCafeCupKindCounts, getCafeCups } from "@/lib/data/cups";
@@ -104,7 +105,7 @@ async function CafeCupsContent({ params, searchParams }: Props) {
               active={query.kind}
               hrefFor={(kind) => hrefWith(id, query, { kind })}
             />
-            <div className="no-scrollbar -mx-1 mt-3 flex items-center gap-2 overflow-x-auto px-1 py-1">
+            <ScrollToActive className="no-scrollbar -mx-1 mt-3 flex items-center gap-2 overflow-x-auto px-1 py-1">
               <span className="shrink-0 text-sm text-muted">Stars:</span>
               {[null, 5, 4, 3, 2, 1].map((stars) => (
                 <Link
@@ -121,8 +122,8 @@ async function CafeCupsContent({ params, searchParams }: Props) {
                   {stars === null ? "Any" : `${stars}★`}
                 </Link>
               ))}
-            </div>
-            <div className="no-scrollbar -mx-1 mt-2 flex items-center gap-3 overflow-x-auto px-1">
+            </ScrollToActive>
+            <ScrollToActive className="no-scrollbar -mx-1 mt-2 flex items-center gap-3 overflow-x-auto px-1">
               <span className="shrink-0 text-sm text-muted">Sort:</span>
               {(Object.keys(SORT_LABEL) as CupSort[]).map((sort) => (
                 <Link
@@ -137,14 +138,20 @@ async function CafeCupsContent({ params, searchParams }: Props) {
                   {SORT_LABEL[sort]}
                 </Link>
               ))}
-            </div>
+            </ScrollToActive>
 
             {cups.cards.length > 0 ? (
               <>
-                <ul className="mt-6 divide-y divide-line border-t border-line">
+                {/* The list's own heading: what is showing, filters included. */}
+                <h2 className="mt-6 text-base font-semibold text-ink tabular-nums">
+                  {plural(cups.total, "cup")}
+                  {query.kind ? ` with ${CUP_KIND_LABEL[query.kind].toLowerCase()}` : ""}
+                  {query.rating ? ` rated ${plural(query.rating, "star")}` : ""}
+                </h2>
+                <ul className="mt-3 divide-y divide-line border-t border-line">
                   {cups.cards.map((cup) => (
                     <li key={cup.id} className="py-7">
-                      <CupCard cup={cup} shownPhotos={4} />
+                      <CupCard cup={cup} cafeName={cafe.name} shownPhotos={4} />
                     </li>
                   ))}
                 </ul>

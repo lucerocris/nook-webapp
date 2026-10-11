@@ -10,6 +10,7 @@ import {
 } from "@/lib/data/cups-mappers";
 import { cn } from "@/lib/utils";
 import CupCard from "./CupCard";
+import ScrollToActive from "./ScrollToActive";
 import CupKindIcon, { CUP_KIND_LABEL } from "./CupKindIcon";
 import RatingStars from "./RatingStars";
 
@@ -75,28 +76,30 @@ export function CupKindLinks({
   const chip =
     "inline-flex h-9 shrink-0 items-center gap-1.5 rounded-full border px-3.5 text-sm font-medium transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand";
   return (
-    <nav aria-label="Show cups with" className="no-scrollbar -mx-1 flex gap-2 overflow-x-auto px-1 py-1">
-      <Link
-        href={hrefFor(null)}
-        aria-current={active === null ? "page" : undefined}
-        className={cn(chip, active === null ? "border-ink bg-ink text-white" : "border-line text-ink hover:bg-paper")}
-      >
-        All
-      </Link>
-      {kinds.map((kind) => (
+    <nav aria-label="Show cups with">
+      <ScrollToActive className="no-scrollbar -mx-1 flex gap-2 overflow-x-auto px-1 py-1">
         <Link
-          key={kind}
-          href={hrefFor(kind)}
-          aria-current={active === kind ? "page" : undefined}
-          className={cn(chip, active === kind ? "border-ink bg-ink text-white" : "border-line text-ink hover:bg-paper")}
+          href={hrefFor(null)}
+          aria-current={active === null ? "page" : undefined}
+          className={cn(chip, active === null ? "border-ink bg-ink text-white" : "border-line text-ink hover:bg-paper")}
         >
-          <CupKindIcon kind={kind} size={15} />
-          {CUP_KIND_LABEL[kind]}
-          <span className={cn("tabular-nums", active === kind ? "text-white/75" : "text-muted")}>
-            {counts[kind]}
-          </span>
+          All
         </Link>
-      ))}
+        {kinds.map((kind) => (
+          <Link
+            key={kind}
+            href={hrefFor(kind)}
+            aria-current={active === kind ? "page" : undefined}
+            className={cn(chip, active === kind ? "border-ink bg-ink text-white" : "border-line text-ink hover:bg-paper")}
+          >
+            <CupKindIcon kind={kind} size={15} />
+            {CUP_KIND_LABEL[kind]}
+            <span className={cn("tabular-nums", active === kind ? "text-white/75" : "text-muted")}>
+              {counts[kind]}
+            </span>
+          </Link>
+        ))}
+      </ScrollToActive>
     </nav>
   );
 }
@@ -110,10 +113,12 @@ export function CupKindLinks({
  */
 export default function CafeCups({
   cafeId,
+  cafeName,
   cups,
   kindCounts,
 }: {
   cafeId: string;
+  cafeName: string;
   cups: Cups;
   /** null when they couldn't be read: no chips, the rest of the section stays. */
   kindCounts: Record<CupKind, number> | null;
@@ -170,7 +175,7 @@ export default function CafeCups({
             <ul className="divide-y divide-line">
               {cards.map((cup) => (
                 <li key={cup.id} className="py-6 first:pt-0">
-                  <CupCard cup={cup} />
+                  <CupCard cup={cup} cafeName={cafeName} />
                 </li>
               ))}
             </ul>

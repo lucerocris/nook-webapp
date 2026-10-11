@@ -256,7 +256,7 @@ async function CafeDetailContent({ params }: Props) {
                 {/* The old #reviews links still land here. */}
                 <span id="reviews" aria-hidden />
                 {cups ? (
-                  <CafeCups cafeId={id} cups={cups} kindCounts={kindCounts} />
+                  <CafeCups cafeId={id} cafeName={cafe.name} cups={cups} kindCounts={kindCounts} />
                 ) : (
                   <>
                     <SectionTitle>Cups</SectionTitle>
