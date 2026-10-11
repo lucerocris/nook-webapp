@@ -128,7 +128,7 @@ export default function CafeCups({
 
   return (
     <div>
-      <div className="flex items-end justify-between gap-4">
+      <div className="flex items-center justify-between gap-4">
         <h2 className="flex items-center gap-2 text-xl font-semibold tracking-[-0.02em] text-ink">
           {stats.rating !== null ? (
             <Star size={18} weight="fill" className="text-fern" aria-hidden />

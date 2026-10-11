@@ -59,7 +59,7 @@ export default function ProfileCups({ cups, firstName }: { cups: Cups; firstName
           <ul className="mt-4 space-y-6">
             {cafe.cups.map((cup) => (
               <li key={cup.id}>
-                <CupCard cup={cup} showAuthor={false} cafeName={cafe.cafeName} />
+                <CupCard cup={cup} showAuthor={false} absoluteDate cafeName={cafe.cafeName} />
               </li>
             ))}
           </ul>

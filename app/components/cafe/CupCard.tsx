@@ -20,6 +20,7 @@ export default function CupCard({
   cafeName,
   shownPhotos = 3,
   showAuthor = true,
+  absoluteDate = false,
 }: {
   cup: Cup;
   /** For the photos' alt text. */
@@ -27,6 +28,9 @@ export default function CupCard({
   shownPhotos?: number;
   /** Off on a profile, where the author is the page. */
   showAuthor?: boolean;
+  /** "Oct 9, 2026" instead of "2 days ago": a profile is a history, and it
+   * renders outside Suspense, where reading the clock isn't allowed. */
+  absoluteDate?: boolean;
 }) {
   const [expanded, setExpanded] = useState(false);
   const [overflows, setOverflows] = useState(false);
@@ -41,7 +45,7 @@ export default function CupCard({
   const named = cup.items.filter((item) => !item.photo && item.label);
   const shown = photos.slice(0, shownPhotos);
   const extra = photos.length - shown.length;
-  const when = relativeVisitDate(cup.visitedAt);
+  const when = absoluteDate ? visitDay(cup.visitedAt) : relativeVisitDate(cup.visitedAt);
   const visits = cup.visitsByAuthor > 1 ? plural(cup.visitsByAuthor, "visit") + " here" : null;
 
   const author = (
@@ -153,6 +157,22 @@ export default function CupCard({
       ) : null}
     </article>
   );
+}
+
+const dayFormat = new Intl.DateTimeFormat("en-US", {
+  year: "numeric",
+  month: "short",
+  day: "numeric",
+  timeZone: "Asia/Manila",
+});
+
+/** The visit's day: a bare date is that day (read at noon Manila time so no
+ * time zone moves it), a timestamp is its day in the Philippines. */
+function visitDay(visitedAt: string): string {
+  const at = /^\d{4}-\d{2}-\d{2}$/.test(visitedAt)
+    ? new Date(`${visitedAt}T12:00:00+08:00`)
+    : new Date(visitedAt);
+  return Number.isNaN(at.getTime()) ? "" : dayFormat.format(at);
 }
 
 /** "Spanish latte at Hom Cafe", or, for a photo nobody named, "Photo of Hom
