@@ -153,8 +153,19 @@ test("query params are checked", () => {
 });
 
 test("visit days read in words", () => {
-  const now = new Date(2026, 9, 11, 15);
+  const now = new Date("2026-10-11T15:00:00+08:00");
   assert.equal(relativeVisitDate("2026-10-11", now), "Today");
   assert.equal(relativeVisitDate("2026-10-10", now), "Yesterday");
   assert.equal(relativeVisitDate("2026-09-27", now), "2 weeks ago");
+  assert.equal(relativeVisitDate("not a date", now), "");
+});
+
+test("visit days count on the Philippine calendar, whatever the runtime zone", () => {
+  // 03:00 on the 11th in Manila is still the 10th in UTC (a Vercel server):
+  // both must call a visit on the 10th "Yesterday", or hydration disagrees.
+  const now = new Date("2026-10-10T19:00:00Z");
+  assert.equal(relativeVisitDate("2026-10-10", now), "Yesterday");
+  assert.equal(relativeVisitDate("2026-10-11", now), "Today");
+  // A legacy timestamp late on the 10th in UTC is the 11th in Manila.
+  assert.equal(relativeVisitDate("2026-10-10T17:30:00Z", now), "Today");
 });

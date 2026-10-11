@@ -224,15 +224,36 @@ export function legacyStats(
 
 // ── Display helpers ──────────────────────────────────────────────────────
 
+/** The calendar day (YYYY-MM-DD) of an instant in the Philippines. */
+const manilaDay = new Intl.DateTimeFormat("en-CA", {
+  timeZone: "Asia/Manila",
+  year: "numeric",
+  month: "2-digit",
+  day: "2-digit",
+});
+
+function dayNumber(isoDay: string): number {
+  const [y, m, d] = isoDay.split("-").map(Number);
+  return Date.UTC(y, m - 1, d) / 86_400_000;
+}
+
 /** "Today", "Yesterday", "3 days ago", "2 weeks ago", "5 months ago",
- * "a year ago". `visitedAt` may be a bare date (read as local noon so a
- * timezone never shifts it a day). */
+ * "a year ago". `visitedAt` may be a bare date (the visit day as posted) or
+ * an ISO timestamp. Days are counted on the Philippine calendar, not the
+ * runtime's, so the server (UTC on Vercel) and a visitor's browser render the
+ * same words and hydration never disagrees around midnight. */
 export function relativeVisitDate(visitedAt: string, now: Date = new Date()): string {
-  const iso = /^\d{4}-\d{2}-\d{2}$/.test(visitedAt) ? `${visitedAt}T12:00:00` : visitedAt;
-  const then = new Date(iso);
-  if (Number.isNaN(then.getTime())) return "";
-  const startOf = (d: Date) => new Date(d.getFullYear(), d.getMonth(), d.getDate()).getTime();
-  const days = Math.round((startOf(now) - startOf(then)) / 86_400_000);
+  let day: string;
+  if (/^\d{4}-\d{2}-\d{2}$/.test(visitedAt)) {
+    day = visitedAt;
+  } else {
+    const then = new Date(visitedAt);
+    if (Number.isNaN(then.getTime())) return "";
+    day = manilaDay.format(then);
+  }
+  if (Number.isNaN(now.getTime())) return "";
+  const days = Math.round(dayNumber(manilaDay.format(now)) - dayNumber(day));
+  if (!Number.isFinite(days)) return "";
   if (days <= 0) return "Today";
   if (days === 1) return "Yesterday";
   if (days < 7) return `${days} days ago`;
