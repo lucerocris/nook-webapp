@@ -5,6 +5,7 @@ import type maplibregl from "maplibre-gl";
 import type { FeatureCollection, Point } from "geojson";
 import "maplibre-gl/dist/maplibre-gl.css";
 
+import { track } from "@/lib/analytics";
 import type { CafeSummary } from "@/lib/data/cafes-mappers";
 import { hasValidCoordinates, type MapViewport } from "@/lib/utils/maps";
 
@@ -227,6 +228,7 @@ export default function CafeMap({
           }
 
           onSelectCafe?.(id);
+          track("map_cafe_opened", { cafe_id: cafe.id, cafe_name: cafe.name, via: "pin" });
 
           const popup = new maplibregl.Popup({
             closeButton: true,
@@ -731,6 +733,11 @@ function buildPopupCard(cafe: CafeSummary): HTMLElement {
 
   const container = document.createElement("div");
   container.className = "cafe-popup-card w-64 overflow-hidden rounded-2xl bg-white";
+  container.addEventListener("click", (e) => {
+    if (e.target instanceof Element && e.target.closest("a")) {
+      track("map_cafe_opened", { cafe_id: cafe.id, cafe_name: cafe.name, via: "popup" });
+    }
+  });
   container.innerHTML = `
     <a href="/cafes/${encodeURIComponent(cafe.id)}" class="group block">
       <div class="relative aspect-[4/3] w-full overflow-hidden rounded-t-xl bg-subtle">

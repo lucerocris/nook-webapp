@@ -124,7 +124,7 @@ export default function CrawlHeader({
       {invite ? <CrewRow invite={invite} /> : null}
 
       <div className="mt-6 flex flex-wrap items-center gap-2">
-        <GetAppButton label={invite && !full ? "Get Nook to join" : "Get Nook"} />
+        <GetAppButton placement="crawl_header" label={invite && !full ? "Get Nook to join" : "Get Nook"} />
         <a
           href="#join"
           className="flex h-11 items-center rounded-full border border-line-strong bg-white px-5 text-sm font-medium text-ink transition-colors hover:bg-subtle focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand"

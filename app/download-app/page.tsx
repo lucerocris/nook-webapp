@@ -84,7 +84,7 @@ export default function DownloadAppPage() {
                   ))}
                 </ul>
 
-                <StoreBadges className="mt-8 justify-center lg:justify-start" />
+                <StoreBadges placement="download_page" className="mt-8 justify-center lg:justify-start" />
                 <p className="mt-3 text-xs text-muted">Free on the App Store and Google Play</p>
                 <div className="mt-8 hidden items-center gap-4 lg:flex">
                   <div className="rounded-xl bg-white p-2 shadow-raise">

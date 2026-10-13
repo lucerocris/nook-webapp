@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 
 import CrawlLanding from "@/app/components/crawl/CrawlLanding";
+import TrackView from "@/app/components/TrackView";
 import { crawlMetadata } from "@/app/components/crawl/crawlMetadata";
 import { getCrewInvite, getPublicCrawl } from "@/lib/data/crawls";
 
@@ -36,5 +37,16 @@ export default async function CrewInvitePage({ params }: Props) {
   const { code, invite: inviteCode } = await params;
   const { crawl, invite } = await load(code, inviteCode);
   if (!crawl && !invite) notFound();
-  return <CrawlLanding crawl={crawl} invite={invite} />;
+  return (
+    <>
+      <TrackView
+        event="share_link_opened"
+        properties={{
+          link_type: invite ? "crew_invite" : "crawl",
+          share_code: crawl?.shareCode ?? invite?.shareCode ?? code,
+        }}
+      />
+      <CrawlLanding crawl={crawl} invite={invite} />
+    </>
+  );
 }

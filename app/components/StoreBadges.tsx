@@ -1,16 +1,21 @@
 import { AppleLogo, GooglePlayLogo } from "@phosphor-icons/react/dist/ssr";
 
+import type { GetAppPlacement } from "@/lib/analytics";
 import { APP_STORE_URL, PLAY_STORE_URL } from "@/lib/app-links";
 import { cn } from "@/lib/utils";
 
 /** App Store and Google Play buttons side by side. If PLAY_STORE_URL is ever
  * unset, the Android badge falls back to a muted "coming soon" rather than a
- * dead link. */
+ * dead link. Clicks are reported as `get_app_clicked` through the data-get-app
+ * attributes (see instrumentation-client.ts). */
 export default function StoreBadges({
+  placement,
   size = "md",
   tone = "light",
   className,
 }: {
+  /** Where on the site these badges sit, for get_app_clicked. */
+  placement: GetAppPlacement;
   size?: "sm" | "md";
   /** "dark": for the dark-green band — white badge, timberwolf pending note. */
   tone?: "light" | "dark";
@@ -34,6 +39,8 @@ export default function StoreBadges({
     <div className={cn("flex flex-wrap gap-2.5", className)}>
       <a
         href={APP_STORE_URL}
+        data-get-app="ios"
+        data-get-app-placement={placement}
         target="_blank"
         rel="noreferrer"
         className={cn(
@@ -55,6 +62,8 @@ export default function StoreBadges({
       {PLAY_STORE_URL ? (
         <a
           href={PLAY_STORE_URL}
+          data-get-app="android"
+          data-get-app-placement={placement}
           target="_blank"
           rel="noreferrer"
           className={cn(

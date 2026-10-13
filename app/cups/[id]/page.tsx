@@ -190,7 +190,7 @@ export default async function CupPage({ params }: Props) {
                   Find your next cafe on Nook
                 </h2>
                 <p className="mt-1 text-sm text-body">Free on the App Store and Google Play.</p>
-                <StoreBadges size="sm" className="mt-4" />
+                <StoreBadges placement="cup_page" size="sm" className="mt-4" />
               </section>
 
               <Link

@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { DownloadSimple } from "@phosphor-icons/react";
 
+import type { GetAppPlacement, GetAppPlatform } from "@/lib/analytics";
 import { APP_STORE_URL, PLAY_STORE_URL } from "@/lib/app-links";
 import { cn } from "@/lib/utils";
 
@@ -21,9 +22,12 @@ function storeFor(userAgent: string): string {
  */
 export default function GetAppButton({
   label = "Get Nook",
+  placement,
   className,
 }: {
   label?: string;
+  /** Where the button sits, for get_app_clicked. */
+  placement: GetAppPlacement;
   className?: string;
 }) {
   const [href, setHref] = useState("/download-app");
@@ -36,9 +40,13 @@ export default function GetAppButton({
   }, []);
 
   const external = href.startsWith("http");
+  const platform: GetAppPlatform =
+    href === APP_STORE_URL ? "ios" : href === PLAY_STORE_URL ? "android" : "any";
   return (
     <a
       href={href}
+      data-get-app={platform}
+      data-get-app-placement={placement}
       {...(external ? { target: "_blank", rel: "noreferrer" } : {})}
       className={cn(
         "flex h-11 items-center gap-2 rounded-full bg-brand px-5 text-sm font-semibold text-white transition-colors hover:bg-brand-hover active:bg-brand-deep focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand",

@@ -36,7 +36,7 @@ export default function ProfileAppBand({
         <p className="mt-2 max-w-[48ch] text-[15px] leading-relaxed text-body">
           {body}
         </p>
-        <StoreBadges size="sm" className="mt-5" />
+        <StoreBadges placement="profile_band" size="sm" className="mt-5" />
       </div>
       <div className="hidden flex-col items-center gap-2 sm:flex">
         <div className="rounded-2xl bg-white p-3 shadow-raise">

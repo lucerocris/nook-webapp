@@ -44,7 +44,7 @@ export default function Footer({ flush = false }: { flush?: boolean }) {
             <p className="mt-4 max-w-sm text-[15px] leading-relaxed text-body">
               Philippine cafes, community curated. Find the right spot to work, study or slow down.
             </p>
-            {flush ? null : <StoreBadges size="sm" className="mt-8 md:mt-auto md:pt-8" />}
+            {flush ? null : <StoreBadges placement="footer" size="sm" className="mt-8 md:mt-auto md:pt-8" />}
           </div>
 
           <div className="grid grid-cols-2 gap-8">

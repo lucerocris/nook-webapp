@@ -12,6 +12,7 @@ import {
 } from "react";
 import { MagnifyingGlass, Sparkle, X } from "@phosphor-icons/react";
 
+import { track } from "@/lib/analytics";
 import { cn } from "@/lib/utils";
 
 import AskAIPanel from "./AskAIPanel";
@@ -26,6 +27,18 @@ type Props = {
 };
 
 const RESULT_LIMIT = 24;
+/** A live query counts as a search once typing has paused this long, so a
+ * word typed letter by letter is one search_performed, not one per letter. */
+const SEARCH_SETTLE_MS = 1200;
+
+function searchProperties(query: string, tags: string[]) {
+  return {
+    query: query.slice(0, 100),
+    query_length: query.length,
+    tags,
+    tag_count: tags.length,
+  };
+}
 
 export default function HeroSearch({
   tags,
@@ -48,6 +61,7 @@ export default function HeroSearch({
   const containerRef = useRef<HTMLDivElement | null>(null);
   const inputRef = useRef<HTMLInputElement | null>(null);
   const listboxId = useId();
+  const liveSearchTimer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
 
   const tagsKey = selectedTags.join(",");
 
@@ -66,6 +80,16 @@ export default function HeroSearch({
         .then((data: { cafes: CafeSummary[] }) => {
           setCafes(data.cafes);
           setSearchFailed(false);
+          // The initial empty fetch (no text, no tags) is not a search.
+          if (!trimmed && !tagsKey) return;
+          liveSearchTimer.current = setTimeout(() => {
+            track("search_performed", {
+              ...searchProperties(trimmed, tagsKey ? tagsKey.split(",") : []),
+              trigger: "live",
+              placement: variant,
+              result_count: data.cafes.length,
+            });
+          }, SEARCH_SETTLE_MS);
         })
         .catch((err) => {
           if (err?.name !== "AbortError") {
@@ -79,8 +103,11 @@ export default function HeroSearch({
         });
     });
 
-    return () => controller.abort();
-  }, [deferredQ, tagsKey, startTransition]);
+    return () => {
+      controller.abort();
+      clearTimeout(liveSearchTimer.current);
+    };
+  }, [deferredQ, tagsKey, startTransition, variant]);
 
   useEffect(() => {
     if (!open && !askAiOpen) return;
@@ -124,13 +151,20 @@ export default function HeroSearch({
     (query: string) => {
       const trimmed = query.trim();
       setOpen(false);
+      // A pending live report would count this same search twice.
+      clearTimeout(liveSearchTimer.current);
+      track("search_performed", {
+        ...searchProperties(trimmed, selectedTags),
+        trigger: "submit",
+        placement: variant,
+      });
       const params = new URLSearchParams();
       if (trimmed) params.set("q", trimmed);
       if (selectedTags.length > 0) params.set("tags", selectedTags.join(","));
       const qs = params.toString();
       router.push(qs ? `/map?${qs}` : "/map");
     },
-    [router, selectedTags],
+    [router, selectedTags, variant],
   );
 
   const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {

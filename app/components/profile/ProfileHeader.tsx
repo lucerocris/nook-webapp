@@ -81,7 +81,7 @@ export default function ProfileHeader({
       ) : null}
 
       <div className="mt-5 flex items-center gap-2">
-        <GetAppButton />
+        <GetAppButton placement="profile_header" />
         <ShareButton
           title={`${profile.name} on Nook`}
           text={`${profile.name}'s cafes and coffee on Nook`}

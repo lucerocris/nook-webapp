@@ -17,6 +17,7 @@ import { cn } from "@/lib/utils";
 import CafeMap from "./CafeMap";
 import LoadingDots from "./LoadingDots";
 import MapFilterModal, { SORT_OPTIONS, type SortId } from "./MapFilterModal";
+import { track } from "@/lib/analytics";
 import { getOpenStatus } from "@/lib/utils/hours";
 import type { CafeSummary } from "@/lib/data/cafes-mappers";
 import {
@@ -448,6 +449,9 @@ function MapListCard({
   return (
     <Link
       href={`/cafes/${cafe.id}`}
+      onClick={() =>
+        track("map_cafe_opened", { cafe_id: cafe.id, cafe_name: cafe.name, via: "list" })
+      }
       onMouseEnter={onHover}
       onFocus={onHover}
       className={cn(

@@ -23,6 +23,7 @@ import { getCafeCupKindCounts, getCafeCupPhotos, getCafeCups } from "@/lib/data/
 import { parseOperatingHours } from "@/lib/utils/hours";
 import { parseSocialLinks } from "@/lib/utils/social";
 import JsonLd from "@/app/components/JsonLd";
+import TrackView from "@/app/components/TrackView";
 import { cafeJsonLd } from "@/lib/seo/cafe-json-ld";
 import { settle } from "@/lib/utils/settle";
 import { cleanText, snippet } from "@/lib/seo/text";
@@ -170,6 +171,10 @@ async function CafeDetailContent({ params }: Props) {
   return (
     <>
       <JsonLd data={cafeJsonLd(cafe, operatingHours, cups ?? undefined)} />
+      <TrackView
+        event="cafe_page_viewed"
+        properties={{ cafe_id: cafe.id, cafe_name: cafe.name }}
+      />
       {/* No global navbar below `lg` (see NavbarShell), so the gallery runs to
           the top edge of the viewport. With no photos the title needs its own
           breathing room instead. */}

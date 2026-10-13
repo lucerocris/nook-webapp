@@ -1,7 +1,8 @@
 "use client";
 
 import Link from "next/link";
-import { useActionState } from "react";
+import { useActionState, useRef } from "react";
+import { track } from "@/lib/analytics";
 import { signUp, type AuthState } from "../actions";
 
 export default function SignupPage() {
@@ -9,6 +10,10 @@ export default function SignupPage() {
     signUp,
     undefined,
   );
+
+  // Once per visit to this page: retries after a validation error are the
+  // same signup, not another one started.
+  const started = useRef(false);
 
   return (
     <div className="rounded-2xl border border-line bg-white p-7 shadow-[0_12px_28px_rgba(0,0,0,0.08)]">
@@ -19,7 +24,15 @@ export default function SignupPage() {
         Save cafes, write reviews, and find your next study spot.
       </p>
 
-      <form action={formAction} className="mt-6 space-y-4">
+      <form
+        action={formAction}
+        onSubmit={() => {
+          if (started.current) return;
+          started.current = true;
+          track("signup_started");
+        }}
+        className="mt-6 space-y-4"
+      >
         <label className="block">
           <span className="text-sm font-medium text-ink">Email</span>
           <input

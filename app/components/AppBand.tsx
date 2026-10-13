@@ -32,7 +32,7 @@ export default function AppBand() {
               The app for iPhone and Android keeps the map in your pocket, saves cafes to Want to
               try, and ranks the ones you have been to.
             </p>
-            <StoreBadges className="mt-6" />
+            <StoreBadges placement="app_band" className="mt-6" />
             <div className="mt-8 hidden items-center gap-4 lg:flex">
               <div className="rounded-xl bg-white p-2 shadow-raise">
                 <Image

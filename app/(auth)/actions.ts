@@ -1,12 +1,13 @@
 "use server";
 
-import { headers } from "next/headers";
+import { cookies, headers } from "next/headers";
 import { redirect } from "next/navigation";
 import { z } from "zod";
 import { createClient } from "@/lib/supabase/server";
 import { SITE_URL } from "@/lib/env";
 import { headerKey, rateLimit } from "@/lib/rate-limit";
 import { safeNext } from "@/lib/safe-next";
+import { SIGNUP_DONE_COOKIE, SIGNUP_DONE_COOKIE_OPTIONS } from "@/lib/analytics-cookies";
 
 const credentialsSchema = z.object({
   email: z.email("Please enter a valid email.").trim(),
@@ -178,6 +179,9 @@ export async function verifySignupOtp(
     console.error("[auth] otp verification failed", error.message);
     return { error: OTP_FAILED };
   }
+
+  // Lets the next page report signup_completed as this user (AnalyticsIdentity).
+  (await cookies()).set(SIGNUP_DONE_COOKIE, "otp", SIGNUP_DONE_COOKIE_OPTIONS);
 
   redirect(safeNext(formData.get("next")));
 }

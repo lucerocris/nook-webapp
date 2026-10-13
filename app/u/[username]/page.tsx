@@ -4,6 +4,7 @@ import { ChatCircleText, Coffee, GridFour, LockSimple } from "@phosphor-icons/re
 
 import Footer from "@/app/components/Footer";
 import JsonLd from "@/app/components/JsonLd";
+import TrackView from "@/app/components/TrackView";
 import SectionTabs from "@/app/components/cafe/SectionTabs";
 import ProfileAppBand from "@/app/components/profile/ProfileAppBand";
 import ProfileCups from "@/app/components/profile/ProfileCups";
@@ -105,6 +106,10 @@ export default async function PublicProfilePage({ params }: Props) {
 
   return (
     <>
+      <TrackView
+        event="share_link_opened"
+        properties={{ link_type: "profile", username: profile.username }}
+      />
       <JsonLd
         data={{
           "@context": "https://schema.org",

@@ -2,6 +2,7 @@ import { NextResponse, type NextRequest } from "next/server";
 
 import { createClient } from "@/lib/supabase/server";
 import { safeNext } from "@/lib/safe-next";
+import { SIGNUP_DONE_COOKIE, SIGNUP_DONE_COOKIE_OPTIONS } from "@/lib/analytics-cookies";
 
 /**
  * The tap-the-link half of signup confirmation.
@@ -34,7 +35,10 @@ export async function GET(request: NextRequest) {
     return NextResponse.redirect(failed);
   }
 
-  return NextResponse.redirect(
+  const response = NextResponse.redirect(
     new URL(safeNext(searchParams.get("next")), request.url),
   );
+  // Lets the next page report signup_completed as this user (AnalyticsIdentity).
+  response.cookies.set(SIGNUP_DONE_COOKIE, "link", SIGNUP_DONE_COOKIE_OPTIONS);
+  return response;
 }
