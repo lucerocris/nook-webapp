@@ -14,7 +14,7 @@ export default function CupAvatar({
   const style = { width: size, height: size };
   if (url) {
     return (
-      <span className="relative shrink-0 overflow-hidden rounded-full bg-subtle" style={style}>
+      <span className="relative block shrink-0 overflow-hidden rounded-full bg-subtle" style={style}>
         <Image src={url} alt="" fill sizes={`${size}px`} className="object-cover" />
       </span>
     );

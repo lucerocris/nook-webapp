@@ -188,7 +188,7 @@ function StorySlot({
       aria-label={`${story.authorName}’s ${count === 1 ? "photo" : `${count} photos`}${
         age ? `, ${age}` : ""
       }${seen ? "" : ", new"}. Open`}
-      className="group flex w-[88px] shrink-0 snap-start flex-col items-center rounded-xl pt-1 pb-1 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand"
+      className="group flex w-24 shrink-0 snap-start first:-ml-2.5 flex-col items-center rounded-xl pt-1 pb-1 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand"
     >
       <span className="relative block size-[76px]">
         <Ring segments={count} seen={seen} />

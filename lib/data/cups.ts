@@ -348,7 +348,12 @@ export const getCupPublic = cache(async (id: string): Promise<PublicCup | null> 
       id: cafe.data.id as string,
       name: String(cafe.data.name).trim(),
       area:
-        [cafe.data.neighborhood, cafe.data.city].filter(Boolean).join(", ") || null,
+        [cafe.data.neighborhood, cafe.data.city]
+          .filter(Boolean)
+          .join(", ")
+          .replace(/\s+/g, " ")
+          .replace(/\s+,/g, ",")
+          .trim() || null,
       featuredImageUrl: (cafe.data.featured_image_url as string | null) ?? null,
     },
   };

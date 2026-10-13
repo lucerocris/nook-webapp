@@ -152,7 +152,7 @@ async function CafeDetailContent({ params }: Props) {
     if (!alreadyPresent) addressParts.push(part);
   }
   const fullAddress = addressParts.join(", ") || cafe.address;
-  const area = [cafe.neighborhood, cafe.city].filter(Boolean).join(", ");
+  const area = cleanText([cafe.neighborhood, cafe.city].filter(Boolean).join(", "));
   // Directions to the named place, not a dropped pin at bare coordinates
   // (UX review 6.7): Google resolves "name, address" to the listing.
   const mapsUrl = `https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(

@@ -345,7 +345,7 @@ test("a public cup needs a cup and a named cafe; anything else is not public", (
   assert.equal(mapCupPublic({ cup: { id: "c1" } }), null);
   const pub = mapCupPublic({
     cup: { id: "c1", source: "review", review_id: "c1", user_id: "u", rating: 5, items: [] },
-    cafe: { id: "k1", name: " Hom Cafe ", neighborhood: "Lahug", city: "Cebu City" },
+    cafe: { id: "k1", name: " Hom Cafe ", neighborhood: "Lahug ", city: "Cebu City" },
   });
   assert.equal(pub?.cafe.name, "Hom Cafe");
   assert.equal(pub?.cafe.area, "Lahug, Cebu City");

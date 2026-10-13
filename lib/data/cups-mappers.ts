@@ -95,6 +95,12 @@ function str(value: unknown): string | null {
   return typeof value === "string" && value.length > 0 ? value : null;
 }
 
+/** Area names come with stray spaces from the data ("Talamban , Cebu City"). */
+function area(value: string | null): string | null {
+  const text = value?.replace(/\s+/g, " ").replace(/\s+,/g, ",").trim();
+  return text || null;
+}
+
 function num(value: unknown): number | null {
   if (typeof value === "number" && Number.isFinite(value)) return value;
   if (typeof value === "string" && value.trim() !== "" && Number.isFinite(Number(value))) {
@@ -232,7 +238,7 @@ export function mapProfileCups(raw: Raw): ProfileCups {
         return {
           cafeId: String(c.cafe_id),
           cafeName: String(c.cafe_name),
-          cafeArea: str(c.cafe_area),
+          cafeArea: area(str(c.cafe_area)),
           cafeImageUrl: str(c.cafe_image_url),
           visitCount: Math.max(num(c.visit_count) ?? cups.length, cups.length),
           lastVisitedAt: str(c.last_visited_at),
@@ -509,7 +515,7 @@ export function mapCupPublic(raw: Raw | null | undefined): PublicCup | null {
     cafe: {
       id: String(cafeRaw.id),
       name: String(cafeRaw.name).trim(),
-      area: [str(cafeRaw.neighborhood), str(cafeRaw.city)].filter(Boolean).join(", ") || null,
+      area: area([str(cafeRaw.neighborhood), str(cafeRaw.city)].filter(Boolean).join(", ")),
       featuredImageUrl: str(cafeRaw.featured_image_url),
     },
   };

@@ -119,7 +119,8 @@ async function CafeCupsContent({ params, searchParams }: Props) {
         </Link>
         <h1 className="mt-2 text-[1.75rem] font-semibold tracking-[-0.02em] text-ink sm:text-[2rem]">
           Cups
-          {cupTotal > 0 ? (
+          {/* With the switch below, its counts say it. */}
+          {cupTotal > 0 && photoTotal === 0 ? (
             <span className="ml-2 font-normal text-muted tabular-nums">{cupTotal}</span>
           ) : null}
         </h1>
