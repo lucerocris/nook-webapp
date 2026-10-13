@@ -1,4 +1,4 @@
-import { createElement } from "react";
+import { createElement, type ReactNode } from "react";
 import { Star } from "@phosphor-icons/react/dist/ssr";
 
 import type { Tag } from "@/lib/data/cafes-mappers";
@@ -18,6 +18,8 @@ export default function CafeHeading({
   cupCount,
   tags,
   description,
+  createdAt,
+  stories,
 }: {
   area: string;
   /** From rated cups only (each person once); null when nobody rated. */
@@ -27,6 +29,11 @@ export default function CafeHeading({
   cupCount: number | null;
   tags: Tag[];
   description: string | null;
+  /** When the cafe was listed: "Fresh on Nook" only in its first 30 days. */
+  createdAt: string;
+  /** The Latest cups tray, right under the rating line: the proof sits
+   * under the name (UX review 1.2). */
+  stories?: ReactNode;
 }) {
   const featured = tags.filter((t) => t.isFeatured);
   const rest = tags.filter((t) => !t.isFeatured && t.category === "amenities");
@@ -57,10 +64,12 @@ export default function CafeHeading({
               </span>
             </a>
           ) : (
-            <span>Fresh on Nook · no cups yet</span>
+            <span>{isFresh(createdAt) ? "Fresh on Nook · no cups yet" : "No cups yet"}</span>
           )}
         </p>
       )}
+
+      {stories ? <div className="mt-6">{stories}</div> : null}
 
       {facts.length > 0 ? (
         <ul aria-label="Key facts" className="mt-5 flex flex-wrap gap-2">
@@ -87,4 +96,14 @@ export default function CafeHeading({
       ) : null}
     </div>
   );
+}
+
+const FRESH_DAYS = 30;
+
+/** Listed in the last 30 days (COFFEE_VOICE rule 2: a coffee word only when
+ * it is literally true; UX review 6.3). */
+function isFresh(createdAt: string): boolean {
+  const at = new Date(createdAt).getTime();
+  if (Number.isNaN(at)) return false;
+  return Date.now() - at < FRESH_DAYS * 86_400_000;
 }

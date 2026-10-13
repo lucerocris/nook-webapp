@@ -569,6 +569,31 @@ export function relativeVisitDate(visitedAt: string, now: Date = new Date()): st
   return years === 1 ? "a year ago" : `${years} years ago`;
 }
 
+const MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+
+/** Short age of a visit for the tray and the story header: "Today",
+ * "Yesterday", "3d", "2w", then "Jul 2026" (the app's `storyAgeLabel`, in
+ * days on the Philippine calendar, since a visit is a day). */
+export function shortVisitAge(visitedAt: string, now: Date = new Date()): string {
+  let day: string;
+  if (/^\d{4}-\d{2}-\d{2}$/.test(visitedAt)) {
+    day = visitedAt;
+  } else {
+    const then = new Date(visitedAt);
+    if (Number.isNaN(then.getTime())) return "";
+    day = manilaDay.format(then);
+  }
+  if (Number.isNaN(now.getTime())) return "";
+  const days = Math.round(dayNumber(manilaDay.format(now)) - dayNumber(day));
+  if (!Number.isFinite(days)) return "";
+  if (days <= 0) return "Today";
+  if (days === 1) return "Yesterday";
+  if (days < 7) return `${days}d`;
+  if (days < 35) return `${Math.floor(days / 7)}w`;
+  const [y, m] = day.split("-").map(Number);
+  return `${MONTHS[m - 1]} ${y}`;
+}
+
 export function plural(n: number, one: string, many = `${one}s`): string {
   return `${n.toLocaleString("en-US")} ${n === 1 ? one : many}`;
 }
@@ -637,6 +662,8 @@ export function jsonLdReviewCards(cards: CupCard[], limit = 5): CupCard[] {
 // ── Search params ────────────────────────────────────────────────────────
 
 export type CupsQuery = {
+  /** The list of cups, or every photo of them as a grid. */
+  view: "cups" | "photos";
   sort: CupSort;
   rating: number | null;
   kind: CupKind | null;
@@ -653,6 +680,7 @@ export function parseCupsQuery(params: Record<string, string | string[] | undefi
   const kind = first(params.kind);
   const page = Number(first(params.page));
   return {
+    view: first(params.view) === "photos" ? "photos" : "cups",
     sort: (CUP_SORTS as readonly string[]).includes(sort ?? "") ? (sort as CupSort) : "recommended",
     rating: Number.isInteger(rating) && rating >= 1 && rating <= 5 ? rating : null,
     kind: isKind(kind) ? kind : null,

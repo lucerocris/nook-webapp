@@ -167,3 +167,20 @@ body {
 .cafe-popup .maplibregl-popup-close-button:hover {
   background: #ffffff;
 }
+
+/* Latest cups story viewer: the active segment fills over the photo's
+ * turn; its animationend moves on. Paused while held, and not used at all
+ * under reduced motion (the viewer then waits for a tap). */
+@keyframes cup-story-fill {
+  from {
+    transform: scaleX(0);
+  }
+  to {
+    transform: scaleX(1);
+  }
+}
+
+.cup-story-fill {
+  transform-origin: left center;
+  animation: cup-story-fill var(--cup-story-duration, 5s) linear forwards;
+}

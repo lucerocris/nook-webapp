@@ -14,11 +14,12 @@ import CafeHeading from "@/app/components/cafe/CafeHeading";
 import CafeInfoPanel from "@/app/components/cafe/CafeInfoPanel";
 import CafeLocation from "@/app/components/cafe/CafeLocation";
 import CafeCups from "@/app/components/cafe/CafeCups";
+import CupStories from "@/app/components/cafe/CupStories";
 import SectionTabs from "@/app/components/cafe/SectionTabs";
 import Footer from "@/app/components/Footer";
 import MenuHighlightsRow from "@/app/components/MenuHighlightsRow";
 import { getCafeById, getMenuItems } from "@/lib/data/cafes";
-import { getCafeCupKindCounts, getCafeCups } from "@/lib/data/cups";
+import { getCafeCupKindCounts, getCafeCupPhotos, getCafeCups } from "@/lib/data/cups";
 import { parseOperatingHours } from "@/lib/utils/hours";
 import { parseSocialLinks } from "@/lib/utils/social";
 import JsonLd from "@/app/components/JsonLd";
@@ -116,9 +117,11 @@ async function CafeDetailContent({ params }: Props) {
   // Cups (one per visit) through the Cups RPCs, or the reviews as cups where
   // the server doesn't have them yet. Any other error leaves `cups` null.
   const legacy = { rating: cafe.rating, reviewCount: cafe.reviewCount };
-  const [cups, kindCounts] = await Promise.all([
+  const [cups, kindCounts, cupPhotos] = await Promise.all([
     settle(() => getCafeCups(id, legacy), "cafe cups"),
     settle(() => getCafeCupKindCounts(id, legacy), "cafe cup kinds"),
+    // The tray is a bonus: a failed read leaves it out, quietly.
+    settle(() => getCafeCupPhotos(id, legacy), "cafe cup photos"),
   ]);
 
   const gallery = [cafe.featuredImageUrl, ...cafe.photoUrls].filter(
@@ -207,6 +210,17 @@ async function CafeDetailContent({ params }: Props) {
                   cupCount={cups ? cups.stats.cupCount : null}
                   tags={cafe.tags}
                   description={cafe.description}
+                  createdAt={cafe.createdAt}
+                  stories={
+                    cupPhotos && cupPhotos.photos.length > 0 ? (
+                      <CupStories
+                        photos={cupPhotos.photos}
+                        cupCount={cups?.stats.cupCount ?? 0}
+                        cafeName={cafe.name}
+                        photosHref={`/cafes/${id}/cups?view=photos`}
+                      />
+                    ) : null
+                  }
                 />
               </section>
 

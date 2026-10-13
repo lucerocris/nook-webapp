@@ -22,6 +22,7 @@ import {
   mapCupPublic,
   cupLead,
   visitCount,
+  shortVisitAge,
   type CafeCups,
 } from "./cups-mappers.ts";
 
@@ -157,12 +158,14 @@ test("query params are checked", () => {
     rating: 4,
     sort: "recent",
     page: 2,
+    view: "cups",
   });
   assert.deepEqual(parseCupsQuery({ kind: "tea", rating: "9", sort: "x" }), {
     kind: null,
     rating: null,
     sort: "recommended",
     page: 1,
+    view: "cups",
   });
 });
 
@@ -348,4 +351,22 @@ test("a public cup needs a cup and a named cafe; anything else is not public", (
   assert.equal(pub?.cafe.area, "Lahug, Cebu City");
   assert.equal(pub?.cup.reviewId, "c1");
   assert.equal(cupLead(pub!.cup), null);
+});
+
+test("short visit ages for the tray", () => {
+  const now = new Date("2026-10-13T04:00:00Z"); // Oct 13 in Manila
+  assert.equal(shortVisitAge("2026-10-13", now), "Today");
+  assert.equal(shortVisitAge("2026-10-12", now), "Yesterday");
+  assert.equal(shortVisitAge("2026-10-10", now), "3d");
+  assert.equal(shortVisitAge("2026-09-29", now), "2w");
+  assert.equal(shortVisitAge("2026-07-19", now), "Jul 2026");
+  assert.equal(shortVisitAge("2026-10-12T17:00:00Z", now), "Today");
+  assert.equal(shortVisitAge("nonsense", now), "");
+});
+
+test("the cups page view is cups unless photos is asked for", () => {
+  assert.equal(parseCupsQuery({}).view, "cups");
+  assert.equal(parseCupsQuery({ view: "photos" }).view, "photos");
+  assert.equal(parseCupsQuery({ view: ["photos", "cups"] }).view, "photos");
+  assert.equal(parseCupsQuery({ view: "grid" }).view, "cups");
 });
