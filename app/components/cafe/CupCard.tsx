@@ -4,16 +4,29 @@ import { useEffect, useRef, useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
 
-import { plural, relativeVisitDate, type CupCard as Cup } from "@/lib/data/cups-mappers";
+
+import { ThumbsUp } from "@phosphor-icons/react";
+
+import {
+  cupPhotoEntries,
+  plural,
+  relativeVisitDate,
+  type CupCard as Cup,
+} from "@/lib/data/cups-mappers";
 import { cn } from "@/lib/utils";
+import CupAvatar from "./CupAvatar";
 import CupKindIcon from "./CupKindIcon";
+import CupPhotoViewer, { cupPhotoAlt } from "./CupPhotoViewer";
 import RatingStars from "./RatingStars";
+import { visitDay } from "./visit-day";
 
 /**
  * One cup — one person's visit (docs/references/cups, Google Maps' card):
  * the author row, stars only when given with the day beside them, the note
  * clamped with "Show more", then the photos edge to edge with what each one
- * is, and anything had without a photo as small chips.
+ * is, and anything had without a photo as small chips. Every photo opens
+ * the viewer, "+N" included, so none is out of reach (UX review 6.5). The
+ * helpful count is shown, read only: voting is in the app.
  */
 export default function CupCard({
   cup,
@@ -33,6 +46,7 @@ export default function CupCard({
   absoluteDate?: boolean;
 }) {
   const [expanded, setExpanded] = useState(false);
+  const [viewing, setViewing] = useState<number | null>(null);
   const [overflows, setOverflows] = useState(false);
   const noteRef = useRef<HTMLParagraphElement>(null);
 
@@ -42,6 +56,7 @@ export default function CupCard({
   }, [cup.note]);
 
   const photos = cup.items.filter((item) => item.photo);
+  const entries = cupPhotoEntries(cup);
   const named = cup.items.filter((item) => !item.photo && item.label);
   const shown = photos.slice(0, shownPhotos);
   const extra = photos.length - shown.length;
@@ -50,7 +65,7 @@ export default function CupCard({
 
   const author = (
     <>
-      <Avatar name={cup.authorName} url={cup.avatarUrl} />
+      <CupAvatar name={cup.authorName} url={cup.avatarUrl} />
       <div className="min-w-0">
         <p className="truncate text-sm font-semibold text-ink group-hover:underline group-hover:underline-offset-4">
           {cup.authorName}
@@ -112,21 +127,25 @@ export default function CupCard({
         >
           {shown.map((item, index) => (
             <li key={item.id} className="min-w-0">
-              <div className="relative aspect-[4/5] overflow-hidden rounded-xl bg-subtle">
+              <button
+                type="button"
+                onClick={() => setViewing(index)}
+                className="group relative block aspect-[4/5] w-full overflow-hidden rounded-xl bg-subtle focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand"
+              >
                 <Image
                   src={item.photo!.imageUrl}
-                  alt={photoAlt(item.label, cafeName, cup)}
+                  alt={cupPhotoAlt(entries[index], cafeName)}
                   fill
                   sizes="(min-width: 1024px) 200px, 33vw"
-                  className="object-cover"
+                  className="object-cover transition-opacity duration-150 group-hover:opacity-90"
                 />
                 {index === shown.length - 1 && extra > 0 ? (
                   <span className="absolute inset-0 flex items-center justify-center bg-ink/55 text-lg font-semibold text-white">
                     +{extra}
-                    <span className="sr-only"> more photos</span>
+                    <span className="sr-only"> more photos, open the photos</span>
                   </span>
                 ) : null}
-              </div>
+              </button>
               {item.label ? (
                 <p className="mt-1.5 flex items-center gap-1 truncate text-xs font-medium text-ink">
                   {item.kind ? (
@@ -155,45 +174,26 @@ export default function CupCard({
           ))}
         </ul>
       ) : null}
+
+      {cup.helpfulCount > 0 ? (
+        <p className="mt-3 flex items-center gap-1.5 text-xs text-muted tabular-nums">
+          <ThumbsUp size={14} aria-hidden />
+          Helpful · {cup.helpfulCount.toLocaleString("en-US")}
+          <span className="sr-only">
+            {" "}
+            ({plural(cup.helpfulCount, "person", "people")} found this helpful)
+          </span>
+        </p>
+      ) : null}
+
+      {entries.length > 0 ? (
+        <CupPhotoViewer
+          photos={entries}
+          index={viewing}
+          onIndexChange={setViewing}
+          cafeName={cafeName}
+        />
+      ) : null}
     </article>
-  );
-}
-
-const dayFormat = new Intl.DateTimeFormat("en-US", {
-  year: "numeric",
-  month: "short",
-  day: "numeric",
-  timeZone: "Asia/Manila",
-});
-
-/** The visit's day: a bare date is that day (read at noon Manila time so no
- * time zone moves it), a timestamp is its day in the Philippines. */
-function visitDay(visitedAt: string): string {
-  const at = /^\d{4}-\d{2}-\d{2}$/.test(visitedAt)
-    ? new Date(`${visitedAt}T12:00:00+08:00`)
-    : new Date(visitedAt);
-  return Number.isNaN(at.getTime()) ? "" : dayFormat.format(at);
-}
-
-/** "Spanish latte at Hom Cafe", or, for a photo nobody named, "Photo of Hom
- * Cafe by @sai". */
-function photoAlt(label: string | null, cafeName: string, cup: Cup): string {
-  if (label) return `${label} at ${cafeName}`;
-  const by = cup.username ? `@${cup.username}` : cup.authorName;
-  return `Photo of ${cafeName} by ${by}`;
-}
-
-function Avatar({ name, url }: { name: string; url: string | null }) {
-  if (url) {
-    return (
-      <span className="relative size-10 shrink-0 overflow-hidden rounded-full bg-subtle">
-        <Image src={url} alt="" fill sizes="40px" className="object-cover" />
-      </span>
-    );
-  }
-  return (
-    <span className="flex size-10 shrink-0 items-center justify-center rounded-full bg-brand-soft text-sm font-semibold text-brand">
-      {name.trim().charAt(0).toUpperCase() || "?"}
-    </span>
   );
 }
