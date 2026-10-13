@@ -7,14 +7,22 @@ import { CaretLeft } from "@phosphor-icons/react/dist/ssr";
 import CafeDetailSkeleton from "@/app/components/CafeDetailSkeleton";
 import Footer from "@/app/components/Footer";
 import CupCard from "@/app/components/cafe/CupCard";
+import CupPhotoGrid from "@/app/components/cafe/CupPhotoGrid";
 import { AddCupPrompt, CupKindLinks, CupsSummary } from "@/app/components/cafe/CafeCups";
 import ScrollToActive from "@/app/components/cafe/ScrollToActive";
 import { CUP_KIND_LABEL } from "@/app/components/cafe/CupKindIcon";
 import { getCafeById } from "@/lib/data/cafes";
-import { CUPS_PAGE_SIZE, getCafeCupKindCounts, getCafeCups } from "@/lib/data/cups";
+import {
+  CUP_PHOTOS_PAGE_SIZE,
+  CUPS_PAGE_SIZE,
+  getCafeCupKindCounts,
+  getCafeCupPhotos,
+  getCafeCups,
+} from "@/lib/data/cups";
 import { parseCupsQuery, plural, type CupSort, type CupsQuery } from "@/lib/data/cups-mappers";
 import { SITE_URL as siteUrl } from "@/lib/env";
 import { cafeShareMetadata } from "@/lib/seo/metadata";
+import { cleanText } from "@/lib/seo/text";
 import { cn } from "@/lib/utils";
 
 type Props = {
@@ -36,8 +44,10 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { id } = await params;
   const cafe = await getCafeById(id, { includeReviews: false });
   if (!cafe) return { title: "Cups", robots: { index: false } };
-  const title = `${cafe.name} cups`;
-  const description = `What people had at ${cafe.name}: photos, notes and ratings from their visits, on Nook.`;
+  // "Cups" is the H1; the title says what people search for (UX review 6.6).
+  const name = cleanText(cafe.name);
+  const title = `${name} photos & reviews`;
+  const description = `What people had at ${name}: photos, notes and ratings from their visits, on Nook.`;
   return {
     title,
     description,
@@ -57,6 +67,7 @@ export default async function CafeCupsPage(props: Props) {
 function hrefWith(id: string, query: CupsQuery, change: Partial<CupsQuery>): string {
   const next = { ...query, page: 1, ...change };
   const params = new URLSearchParams();
+  if (next.view === "photos") params.set("view", "photos");
   if (next.kind) params.set("kind", next.kind);
   if (next.rating) params.set("rating", String(next.rating));
   if (next.sort !== "recommended") params.set("sort", next.sort);
@@ -71,13 +82,28 @@ async function CafeCupsContent({ params, searchParams }: Props) {
   const cafe = await getCafeById(id, { includeReviews: false });
   if (!cafe) notFound();
 
-  const limit = Math.min(query.page * CUPS_PAGE_SIZE, 100);
+  const photosView = query.view === "photos";
+  const limit = Math.min(query.page * (photosView ? CUP_PHOTOS_PAGE_SIZE : CUPS_PAGE_SIZE), 100);
   const legacy = { rating: cafe.rating, reviewCount: cafe.reviewCount };
-  const [cups, kindCounts] = await Promise.all([
-    getCafeCups(id, legacy, { sort: query.sort, rating: query.rating, kind: query.kind, limit }),
+  const [cups, kindCounts, photos, allPhotos] = await Promise.all([
+    getCafeCups(id, legacy, {
+      sort: query.sort,
+      rating: photosView ? null : query.rating,
+      kind: query.kind,
+      limit: photosView ? 1 : limit,
+    }),
     getCafeCupKindCounts(id, legacy),
+    photosView ? getCafeCupPhotos(id, legacy, { kind: query.kind, limit }) : null,
+    // For the Photos count in the switch.
+    getCafeCupPhotos(id, legacy, { limit: 1 }),
   ]);
-  const filtered = query.kind !== null || query.rating !== null;
+  // The cafe's own numbers, unfiltered, for the switch and the summary.
+  const cupTotal = cups.stats.cupCount;
+  const photoTotal = allPhotos.total;
+  const filtered = query.kind !== null || (!photosView && query.rating !== null);
+  // Stars and Sort only earn their rows once there is something to sort
+  // (UX review 6.4); a filter in the URL keeps its row so it can be undone.
+  const showListControls = !photosView && (cupTotal >= 5 || query.rating !== null || query.sort !== "recommended");
   const pill =
     "inline-flex h-9 shrink-0 items-center rounded-full border px-3.5 text-sm font-medium transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand";
 
@@ -93,10 +119,36 @@ async function CafeCupsContent({ params, searchParams }: Props) {
         </Link>
         <h1 className="mt-2 text-[1.75rem] font-semibold tracking-[-0.02em] text-ink sm:text-[2rem]">
           Cups
-          {cups.stats.cupCount > 0 ? (
-            <span className="ml-2 font-normal text-muted tabular-nums">{cups.stats.cupCount}</span>
+          {cupTotal > 0 ? (
+            <span className="ml-2 font-normal text-muted tabular-nums">{cupTotal}</span>
           ) : null}
         </h1>
+
+        {photoTotal > 0 ? (
+          <nav aria-label="Show" className="mt-5 inline-flex rounded-full border border-line p-1">
+            {(
+              [
+                ["cups", "Cups", cupTotal],
+                ["photos", "Photos", photoTotal],
+              ] as const
+            ).map(([view, label, count]) => (
+              <Link
+                key={view}
+                href={hrefWith(id, query, { view, rating: null, sort: "recommended" })}
+                aria-current={query.view === view ? "page" : undefined}
+                className={cn(
+                  "inline-flex h-9 items-center gap-1.5 rounded-full px-4 text-sm font-medium transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand",
+                  query.view === view ? "bg-ink text-white" : "text-ink hover:bg-paper",
+                )}
+              >
+                {label}
+                <span className={cn("tabular-nums", query.view === view ? "text-white/75" : "text-muted")}>
+                  {count}
+                </span>
+              </Link>
+            ))}
+          </nav>
+        ) : null}
 
         <div className="mt-8 grid gap-10 lg:grid-cols-[minmax(0,1fr)_320px] lg:gap-16">
           <div className="order-2 min-w-0 lg:order-1">
@@ -105,6 +157,8 @@ async function CafeCupsContent({ params, searchParams }: Props) {
               active={query.kind}
               hrefFor={(kind) => hrefWith(id, query, { kind })}
             />
+            {showListControls ? (
+            <>
             <ScrollToActive className="no-scrollbar -mx-1 mt-3 flex items-center gap-2 overflow-x-auto px-1 py-1">
               <span className="shrink-0 text-sm text-muted">Stars:</span>
               {[null, 5, 4, 3, 2, 1].map((stars) => (
@@ -139,8 +193,44 @@ async function CafeCupsContent({ params, searchParams }: Props) {
                 </Link>
               ))}
             </ScrollToActive>
+            </>
+            ) : null}
 
-            {cups.cards.length > 0 ? (
+            {photos ? (
+              photos.photos.length > 0 ? (
+                <>
+                  <h2 className="mt-6 mb-4 text-base font-semibold text-ink tabular-nums">
+                    {plural(photos.total, "photo")}
+                    {query.kind ? ` of ${CUP_KIND_LABEL[query.kind].toLowerCase()}` : ""}
+                  </h2>
+                  <CupPhotoGrid photos={photos.photos} cafeName={cafe.name} />
+                  {photos.hasMore && limit < 100 ? (
+                    <Link
+                      href={hrefWith(id, query, { page: query.page + 1 })}
+                      scroll={false}
+                      className="mt-8 inline-flex h-11 items-center rounded-full border border-ink px-5 text-sm font-semibold text-ink transition-colors hover:bg-paper"
+                    >
+                      Show more photos
+                    </Link>
+                  ) : null}
+                </>
+              ) : (
+                <div className="mt-6 rounded-2xl border border-dashed border-line-strong px-6 py-12 text-center">
+                  <p className="text-sm font-semibold text-ink">No photos match</p>
+                  <p className="mt-1 text-sm text-muted">
+                    {query.kind
+                      ? `No photos of ${CUP_KIND_LABEL[query.kind].toLowerCase()} yet.`
+                      : "No photos yet."}
+                  </p>
+                  <Link
+                    href={hrefWith(id, query, { kind: null })}
+                    className="mt-4 inline-flex min-h-11 items-center text-sm font-semibold text-ink underline underline-offset-4"
+                  >
+                    Show all photos
+                  </Link>
+                </div>
+              )
+            ) : cups.cards.length > 0 ? (
               <>
                 {/* The list's own heading: what is showing, filters included. */}
                 <h2 className="mt-6 text-base font-semibold text-ink tabular-nums">
@@ -173,7 +263,7 @@ async function CafeCupsContent({ params, searchParams }: Props) {
                 </p>
                 <p className="mt-1 text-sm text-muted">
                   {filtered
-                    ? `No ${query.kind ? `${CUP_KIND_LABEL[query.kind].toLowerCase()} ` : ""}cups${
+                    ? `No cups${query.kind ? ` with ${CUP_KIND_LABEL[query.kind].toLowerCase()}` : ""}${
                         query.rating ? ` rated ${plural(query.rating, "star")}` : ""
                       } yet.`
                     : "Been here? Add the first one in the Nook app."}
@@ -195,8 +285,11 @@ async function CafeCupsContent({ params, searchParams }: Props) {
               <CupsSummary stats={cups.stats} />
             </div>
             <AddCupPrompt
-              first={cups.stats.cupCount === 0}
-              className={cn("mt-4", cups.cards.length > 0 && "hidden lg:block")}
+              first={cupTotal === 0}
+              className={cn(
+                "mt-4",
+                (photosView ? photoTotal > 0 : cups.cards.length > 0) && "hidden lg:block",
+              )}
             />
           </aside>
         </div>
