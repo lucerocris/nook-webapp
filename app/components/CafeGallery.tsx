@@ -111,7 +111,7 @@ export default function CafeGallery({ cafeName, images }: Props) {
       <div className="absolute right-4 top-[calc(1rem+env(safe-area-inset-top))] z-10 lg:hidden">
         <ShareButton
           title={cafeName}
-          text={`${cafeName} on Nook — cafes in Cebu`}
+          text={`Coffee at ${cafeName}? It's on Nook:`}
           className="border-black/5 bg-white/90 text-ink shadow-sm backdrop-blur hover:bg-white"
         />
       </div>

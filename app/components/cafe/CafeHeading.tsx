@@ -6,6 +6,15 @@ import { getTagIcon } from "@/lib/utils/tag-icon";
 
 const KEY_FACTS = 5;
 
+/** The few facts people check first, shown as chips under the rating: the
+ * cafe's featured tags, topped up with amenities. Exported so the offers
+ * preview can leave them out instead of repeating them (UX review 6.9). */
+export function keyFactTags(tags: Tag[]): Tag[] {
+  const featured = tags.filter((t) => t.isFeatured);
+  const rest = tags.filter((t) => !t.isFeatured && t.category === "amenities");
+  return [...featured, ...rest].slice(0, KEY_FACTS);
+}
+
 /**
  * The facts block under the photos (Trip.com's order, Google Maps' rating
  * line): what and where, the rating line, then a row of the few facts people
@@ -35,9 +44,7 @@ export default function CafeHeading({
    * under the name (UX review 1.2). */
   stories?: ReactNode;
 }) {
-  const featured = tags.filter((t) => t.isFeatured);
-  const rest = tags.filter((t) => !t.isFeatured && t.category === "amenities");
-  const facts = [...featured, ...rest].slice(0, KEY_FACTS);
+  const facts = keyFactTags(tags);
 
   return (
     <div>

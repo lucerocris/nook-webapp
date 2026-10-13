@@ -10,7 +10,7 @@ import CafeGallery from "@/app/components/CafeGallery";
 import CafeStickyBar from "@/app/components/CafeStickyBar";
 import CafeAmenities from "@/app/components/cafe/CafeAmenities";
 import { groupCafeTags } from "@/lib/utils/coffee-tags";
-import CafeHeading from "@/app/components/cafe/CafeHeading";
+import CafeHeading, { keyFactTags } from "@/app/components/cafe/CafeHeading";
 import CafeInfoPanel from "@/app/components/cafe/CafeInfoPanel";
 import CafeLocation from "@/app/components/cafe/CafeLocation";
 import CafeCups from "@/app/components/cafe/CafeCups";
@@ -25,6 +25,7 @@ import { parseSocialLinks } from "@/lib/utils/social";
 import JsonLd from "@/app/components/JsonLd";
 import { cafeJsonLd } from "@/lib/seo/cafe-json-ld";
 import { settle } from "@/lib/utils/settle";
+import { cleanText, snippet } from "@/lib/seo/text";
 
 type Props = {
   params: Promise<{ id: string }>;
@@ -44,11 +45,15 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
     };
   }
 
-  const location = [cafe.neighborhood, cafe.city].filter(Boolean).join(", ");
-  const title = location ? `${cafe.name} — ${location}` : cafe.name;
-  const description =
-    cafe.description?.trim().slice(0, 160) ||
-    `${cafe.name}${location ? ` in ${location}` : ""} — hours, photos, menu and cups on Nook.`;
+  // Data carries stray spaces ("Talamban , Cebu City"); search results show
+  // them, and cut descriptions mid-word (UX review 6.6).
+  const name = cleanText(cafe.name);
+  const location = cleanText([cafe.neighborhood, cafe.city].filter(Boolean).join(", "));
+  const title = location ? `${name} — ${location}` : name;
+  const description = snippet(
+    cafe.description?.trim() ||
+      `${name}${location ? ` in ${location}` : ""} — hours, photos, menu and cups on Nook.`,
+  );
   const images = cafe.featuredImageUrl
     ? [{ url: cafe.featuredImageUrl, alt: cafe.name }]
     : undefined;
@@ -148,7 +153,11 @@ async function CafeDetailContent({ params }: Props) {
   }
   const fullAddress = addressParts.join(", ") || cafe.address;
   const area = [cafe.neighborhood, cafe.city].filter(Boolean).join(", ");
-  const mapsUrl = `https://www.google.com/maps/dir/?api=1&destination=${cafe.lat},${cafe.lng}`;
+  // Directions to the named place, not a dropped pin at bare coordinates
+  // (UX review 6.7): Google resolves "name, address" to the listing.
+  const mapsUrl = `https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(
+    cleanText(`${cafe.name}, ${fullAddress}`),
+  )}`;
   const links = parseSocialLinks(cafe.socialLinks);
   const tabs = [
     { id: "overview", label: "Overview" },
@@ -183,7 +192,7 @@ async function CafeDetailContent({ params }: Props) {
               <div className="hidden shrink-0 lg:block">
                 <ShareButton
                   title={cafe.name}
-                  text={`${cafe.name} on Nook — cafes in Cebu`}
+                  text={`Coffee at ${cafe.name}? It's on Nook:`}
                   label="Share"
                 />
               </div>
@@ -227,7 +236,11 @@ async function CafeDetailContent({ params }: Props) {
               <section id="offers">
                 <SectionTitle>What this cafe offers</SectionTitle>
                 <div className="mt-6">
-                  <CafeAmenities cafeId={id} groups={groupCafeTags(cafe.tags)} />
+                  <CafeAmenities
+                    cafeId={id}
+                    groups={groupCafeTags(cafe.tags)}
+                    shownAbove={keyFactTags(cafe.tags).map((t) => t.id)}
+                  />
                 </div>
               </section>
 

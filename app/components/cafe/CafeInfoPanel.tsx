@@ -109,7 +109,7 @@ export default function CafeInfoPanel({
 
       <ul className="mt-5 flex flex-wrap justify-center gap-x-5 gap-y-3">
         <li className="flex w-14 flex-col items-center gap-1.5">
-          <ShareButton title={name} text={`${name} on Nook — cafes in Cebu`} className="size-11" />
+          <ShareButton title={name} text={`Coffee at ${name}? It's on Nook:`} className="size-11" />
           <span className="text-xs text-body">Share</span>
         </li>
         {links.map((link) => {

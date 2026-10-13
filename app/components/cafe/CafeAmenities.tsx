@@ -15,15 +15,36 @@ import { getTagIcon } from "@/lib/utils/tag-icon";
 export default function CafeAmenities({
   cafeId,
   groups,
+  shownAbove = [],
 }: {
   cafeId: string;
   groups: CafeTagGroups;
+  /** Tag ids already on the page as key-fact chips: the preview skips them
+   * (UX review 6.9); "See all" still counts and lists every tag. */
+  shownAbove?: string[];
 }) {
-  const preview = previewTags(groups);
+  const skip = new Set(shownAbove);
+  const rest = {
+    coffee: groups.coffee.filter((t) => !skip.has(t.id)),
+    amenities: groups.amenities.filter((t) => !skip.has(t.id)),
+    bestFor: groups.bestFor.filter((t) => !skip.has(t.id)),
+    payment: groups.payment.filter((t) => !skip.has(t.id)),
+  };
+  const preview = previewTags(rest);
   const total = tagTotal(groups);
 
   if (total === 0) {
     return <p className="text-sm text-muted">Nothing listed for this cafe yet.</p>;
+  }
+  if (preview.length === 0) {
+    return (
+      <Link
+        href={`/cafes/${cafeId}/offers`}
+        className="inline-flex h-11 items-center rounded-full border border-ink px-5 text-sm font-semibold text-ink transition-colors hover:bg-paper focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand"
+      >
+        See all {total}
+      </Link>
+    );
   }
 
   return (
