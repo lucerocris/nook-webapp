@@ -27,6 +27,9 @@ export const metadata: Metadata = {
   description:
     "Find the perfect spot to work, study, or chill. Filter cafes by Wi-Fi, outlets, and vibe, or ask our AI to find your match.",
   applicationName: "Nook",
+  // Safari's Smart App Banner: a phone visitor's way into the app without
+  // hunting for a badge (UX review 6.8). Same App Store id as APP_STORE_URL.
+  itunes: { appId: "6782604940" },
   /* Same mark and same mechanism as nook-business, so the two sites share one
      favicon. Declared here rather than as an `app/favicon.ico` file convention
      — that convention wins over metadata, and it is what kept serving
