@@ -15,6 +15,13 @@ import {
   countCupsByKind,
   mapProfileCups,
   cupHasKind,
+  mapCafeCupPhotosPayload,
+  groupCupStories,
+  storyLatest,
+  cupPhotoEntries,
+  mapCupPublic,
+  cupLead,
+  visitCount,
   type CafeCups,
 } from "./cups-mappers.ts";
 
@@ -107,6 +114,7 @@ const rpcCups = (rating: number | null, rated: number): CafeCups => ({
     peopleCount: 3,
     photoCount: 2,
     kindPhotoCounts: { coffee: 2, drink: 0, food: 0, space: 0 },
+    kindCupCounts: null,
     ratedPeopleCount: rated,
     rating,
   },
@@ -245,4 +253,99 @@ test("a profile's cups are visits grouped by cafe; private photos stay null", ()
   assert.equal(profile.cafes[0].visitCount, 2);
   assert.equal(profile.cafes[0].cups[1].source, "review");
   assert.equal(profile.cafes[1].cafeArea, null);
+});
+
+test("kind cup counts come from the server's *_cup_count, or null before step 5", () => {
+  const withCounts = mapCafeCupsPayload({
+    stats: { cup_count: 3, coffee_cup_count: 2, drink_cup_count: 0, food_cup_count: 1, space_cup_count: 0 },
+    cards: [],
+  });
+  assert.deepEqual(withCounts.stats.kindCupCounts, { coffee: 2, drink: 0, food: 1, space: 0 });
+  const before = mapCafeCupsPayload({ stats: { cup_count: 3, coffee_photo_count: 3 }, cards: [] });
+  assert.equal(before.stats.kindCupCounts, null);
+  assert.deepEqual(legacyStats([], 0, 0).kindCupCounts, { coffee: 0, drink: 0, food: 0, space: 0 });
+});
+
+const photoRow = (over: Record<string, unknown>) => ({
+  id: "p1",
+  image_url: "https://cdn.example/p1.jpg",
+  kind: "coffee",
+  item_name: " Spanish latte ",
+  taken_at: "2026-10-01T02:00:00+00:00",
+  cup_id: "c1",
+  source: "cup",
+  visited_at: "2026-10-01",
+  rating: 5,
+  note: "Quiet upstairs.",
+  user_id: "u1",
+  username: "sai",
+  full_name: "Sai",
+  avatar_url: null,
+  ...over,
+});
+
+test("cup photos carry their visit; legacy photos stay untyped; no url, no photo", () => {
+  const { photos, total } = mapCafeCupPhotosPayload({
+    photos: [
+      photoRow({}),
+      photoRow({ id: "p2", source: "review", kind: "coffee", cup_id: "r1", rating: 4 }),
+      photoRow({ id: "p3", image_url: null }),
+    ],
+    total: 1,
+  });
+  assert.equal(photos.length, 2);
+  assert.equal(total, 2);
+  assert.equal(photos[0].label, "Spanish latte");
+  assert.equal(photos[0].kind, "coffee");
+  assert.equal(photos[0].note, "Quiet upstairs.");
+  assert.equal(photos[1].kind, null);
+  assert.equal(photos[1].rating, 4);
+});
+
+test("stories: one per person, newest person first, their photos oldest first", () => {
+  const { photos } = mapCafeCupPhotosPayload({
+    photos: [
+      photoRow({ id: "a2", user_id: "a", cup_id: "ca2", visited_at: "2026-10-10" }),
+      photoRow({ id: "b1", user_id: "b", cup_id: "cb1", visited_at: "2026-10-08" }),
+      photoRow({ id: "a1", user_id: "a", cup_id: "ca1", visited_at: "2026-09-01" }),
+    ],
+  });
+  const stories = groupCupStories(photos);
+  assert.deepEqual(stories.map((s) => s.userId), ["a", "b"]);
+  assert.deepEqual(stories[0].photos.map((p) => p.id), ["a1", "a2"]);
+  assert.equal(storyLatest(stories[0]).id, "a2");
+  assert.equal(visitCount(photos), 3);
+  assert.deepEqual(groupCupStories([]), []);
+});
+
+test("a card's photos become entries with the card's stars and note", () => {
+  const cup = mapCupCard({
+    id: "c1",
+    source: "cup",
+    user_id: "u1",
+    rating: 4,
+    note: "Good",
+    items: [
+      { id: "i1", kind: "food", item_name: "Ensaymada", photo: null },
+      { id: "i2", kind: "coffee", item_name: "Latte", photo: { id: "ph", image_url: "x.jpg" } },
+    ],
+  });
+  const entries = cupPhotoEntries(cup);
+  assert.equal(entries.length, 1);
+  assert.equal(entries[0].cupId, "c1");
+  assert.equal(entries[0].rating, 4);
+  assert.equal(cupLead(cup), "Latte");
+});
+
+test("a public cup needs a cup and a named cafe; anything else is not public", () => {
+  assert.equal(mapCupPublic(null), null);
+  assert.equal(mapCupPublic({ cup: { id: "c1" } }), null);
+  const pub = mapCupPublic({
+    cup: { id: "c1", source: "review", review_id: "c1", user_id: "u", rating: 5, items: [] },
+    cafe: { id: "k1", name: " Hom Cafe ", neighborhood: "Lahug", city: "Cebu City" },
+  });
+  assert.equal(pub?.cafe.name, "Hom Cafe");
+  assert.equal(pub?.cafe.area, "Lahug, Cebu City");
+  assert.equal(pub?.cup.reviewId, "c1");
+  assert.equal(cupLead(pub!.cup), null);
 });

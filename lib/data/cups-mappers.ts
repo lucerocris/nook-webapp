@@ -31,6 +31,8 @@ export type CupItem = {
 export type CupCard = {
   id: string;
   source: "cup" | "review" | "photos";
+  /** The legacy review this visit is (or was copied from), else null. */
+  reviewId: string | null;
   userId: string;
   username: string | null;
   authorName: string;
@@ -49,9 +51,13 @@ export type CupStats = {
   cupCount: number;
   peopleCount: number;
   photoCount: number;
-  /** As the server counts them, legacy photos included under 'coffee'. Not
-   * for display: the kind chips use `countCupsByKind`. */
+  /** Typed photos per kind (since Cups step 5; before it the server also
+   * counted legacy photos as coffee). Not for display. */
   kindPhotoCounts: Record<CupKind, number>;
+  /** Visits with at least one item of each kind, typed items only, as the
+   * server counts them (`*_cup_count`, Cups step 5). null from a server
+   * without step 5: the chips then count the cards (`countCupsByKind`). */
+  kindCupCounts: Record<CupKind, number> | null;
   ratedPeopleCount: number;
   /** Average of each person's latest rated visit; null with no ratings. */
   rating: number | null;
@@ -131,6 +137,7 @@ export function mapCupCard(raw: Raw): CupCard {
   return {
     id: String(raw.id),
     source,
+    reviewId: str(raw.review_id),
     userId: String(raw.user_id ?? ""),
     username: str(raw.username),
     authorName: str(raw.full_name) ?? str(raw.username) ?? "Nook member",
@@ -157,6 +164,15 @@ export function mapCupStats(raw: Raw | null | undefined): CupStats {
       food: num(r.food_photo_count) ?? 0,
       space: num(r.space_photo_count) ?? 0,
     },
+    kindCupCounts:
+      "coffee_cup_count" in r
+        ? {
+            coffee: num(r.coffee_cup_count) ?? 0,
+            drink: num(r.drink_cup_count) ?? 0,
+            food: num(r.food_cup_count) ?? 0,
+            space: num(r.space_cup_count) ?? 0,
+          }
+        : null,
     ratedPeopleCount,
     rating: ratedPeopleCount > 0 ? num(r.rating) : null,
   };
@@ -250,6 +266,7 @@ export function reviewToCup(row: LegacyReviewRow): CupCard {
   return {
     id: row.id,
     source: "review",
+    reviewId: row.id,
     userId: row.user_id,
     username: profile?.username ?? null,
     authorName: profile?.full_name || profile?.username || "Nook member",
@@ -285,7 +302,9 @@ export function legacyStats(
     cupCount: count,
     peopleCount: Math.max(people, count > 0 ? 1 : 0),
     photoCount: photos,
-    kindPhotoCounts: { coffee: photos, drink: 0, food: 0, space: 0 },
+    kindPhotoCounts: { coffee: 0, drink: 0, food: 0, space: 0 },
+    // Reviews carry no kinds, so no kind chips.
+    kindCupCounts: { coffee: 0, drink: 0, food: 0, space: 0 },
     ratedPeopleCount: count,
     rating: count > 0 ? cafeRating : null,
   };
@@ -307,6 +326,200 @@ export function countCupsByKind(cups: CupCard[]): Record<CupKind, number> {
     for (const kind of CUP_KINDS) if (cupHasKind(cup, kind)) counts[kind] += 1;
   }
   return counts;
+}
+
+// ── Photos: every photo of a cafe's cups, each with its visit ────────────
+
+/** One photo with the cup (visit) it belongs to, as `get_cafe_cup_photos`
+ * returns it: enough to caption it and to show the cup's stars and note
+ * under it, with no second read. */
+export type CupPhotoEntry = {
+  id: string;
+  imageUrl: string;
+  /** null for a legacy photo nobody typed. */
+  kind: CupKind | null;
+  label: string | null;
+  takenAt: string | null;
+  cupId: string;
+  source: CupCard["source"];
+  /** YYYY-MM-DD, or a timestamp from the legacy fallback. */
+  visitedAt: string;
+  rating: number | null;
+  note: string | null;
+  userId: string;
+  username: string | null;
+  authorName: string;
+  avatarUrl: string | null;
+};
+
+export type CafeCupPhotos = {
+  photos: CupPhotoEntry[];
+  total: number;
+  hasMore: boolean;
+};
+
+export function mapCupPhoto(raw: Raw): CupPhotoEntry | null {
+  const imageUrl = str(raw.image_url);
+  if (!imageUrl || !str(raw.id)) return null;
+  const source = raw.source === "review" || raw.source === "photos" ? raw.source : "cup";
+  return {
+    id: String(raw.id),
+    imageUrl,
+    // Defensive, as for cards: a legacy photo's kind is never a fact.
+    kind: source === "cup" && isKind(raw.kind) ? raw.kind : null,
+    label: str(raw.item_name)?.trim() || null,
+    takenAt: str(raw.taken_at),
+    cupId: String(raw.cup_id ?? raw.id),
+    source,
+    visitedAt: str(raw.visited_at) ?? str(raw.taken_at) ?? "",
+    rating: num(raw.rating),
+    note: str(raw.note)?.trim() || null,
+    userId: String(raw.user_id ?? ""),
+    username: str(raw.username),
+    authorName: str(raw.full_name) ?? str(raw.username) ?? "Nook member",
+    avatarUrl: str(raw.avatar_url),
+  };
+}
+
+export function mapCafeCupPhotosPayload(raw: Raw): CafeCupPhotos {
+  const photos = (Array.isArray(raw.photos) ? (raw.photos as Raw[]) : [])
+    .map(mapCupPhoto)
+    .filter((p): p is CupPhotoEntry => p !== null);
+  return {
+    photos,
+    total: Math.max(num(raw.total) ?? photos.length, photos.length),
+    hasMore: raw.has_more === true,
+  };
+}
+
+/** A cup's photos as photo entries, each carrying the cup's stars and note:
+ * the legacy fallback's photos (reviews' photos) and a card's own viewer. */
+export function cupPhotoEntries(cup: CupCard): CupPhotoEntry[] {
+  return cup.items
+    .filter((item) => item.photo)
+    .map((item) => ({
+      id: item.photo!.id,
+      imageUrl: item.photo!.imageUrl,
+      kind: item.kind,
+      label: item.label,
+      takenAt: item.photo!.takenAt,
+      cupId: cup.id,
+      source: cup.source,
+      visitedAt: cup.visitedAt,
+      rating: cup.rating,
+      note: cup.note,
+      userId: cup.userId,
+      username: cup.username,
+      authorName: cup.authorName,
+      avatarUrl: cup.avatarUrl,
+    }));
+}
+
+// ── Latest cups: the photos as stories, one per person ───────────────────
+
+export type CupStory = {
+  userId: string;
+  username: string | null;
+  authorName: string;
+  avatarUrl: string | null;
+  /** Oldest first, as a person's stories play; never empty. */
+  photos: CupPhotoEntry[];
+};
+
+/** When a photo counts as posted for the tray: the visit day, else when it
+ * was taken. */
+function photoMoment(photo: CupPhotoEntry): number {
+  const day = /^\d{4}-\d{2}-\d{2}$/.test(photo.visitedAt)
+    ? `${photo.visitedAt}T12:00:00+08:00`
+    : photo.visitedAt;
+  const at = new Date(day || photo.takenAt || "").getTime();
+  return Number.isNaN(at) ? 0 : at;
+}
+
+/** The newest photo of a story: the one its ring shows. */
+export function storyLatest(story: CupStory): CupPhotoEntry {
+  return story.photos[story.photos.length - 1];
+}
+
+/**
+ * A cafe's photos grouped per person, the person with the newest visit
+ * first, each person's photos oldest first (the app's `groupCafeStories`).
+ * Ties keep the order the server gave (newest first), so it is stable.
+ */
+export function groupCupStories(photos: CupPhotoEntry[]): CupStory[] {
+  const byUser = new Map<string, CupPhotoEntry[]>();
+  for (const photo of photos) {
+    const key = photo.userId || photo.username || photo.cupId;
+    const list = byUser.get(key);
+    if (list) list.push(photo);
+    else byUser.set(key, [photo]);
+  }
+  const stories: CupStory[] = [...byUser.values()].map((list) => {
+    const oldestFirst = list
+      .map((photo, index) => ({ photo, index }))
+      .sort((a, b) => photoMoment(a.photo) - photoMoment(b.photo) || b.index - a.index)
+      .map((entry) => entry.photo);
+    const first = list[0];
+    return {
+      userId: first.userId,
+      username: first.username,
+      authorName: first.authorName,
+      avatarUrl: first.avatarUrl,
+      photos: oldestFirst,
+    };
+  });
+  return stories
+    .map((story, order) => ({ story, order }))
+    .sort(
+      (a, b) =>
+        photoMoment(storyLatest(b.story)) - photoMoment(storyLatest(a.story)) ||
+        a.order - b.order,
+    )
+    .map((entry) => entry.story);
+}
+
+/** Distinct visits among photos: the tray's count when the cafe's cup count
+ * is unknown. */
+export function visitCount(photos: CupPhotoEntry[]): number {
+  return new Set(photos.map((p) => p.cupId)).size;
+}
+
+// ── One public cup (the /cups/<id> share page) ───────────────────────────
+
+export type PublicCup = {
+  cup: CupCard;
+  cafe: {
+    id: string;
+    name: string;
+    area: string | null;
+    featuredImageUrl: string | null;
+  };
+};
+
+/** `get_cup_public` → domain; null when it isn't public (or isn't there). */
+export function mapCupPublic(raw: Raw | null | undefined): PublicCup | null {
+  if (!raw || typeof raw !== "object") return null;
+  const cupRaw = raw.cup && typeof raw.cup === "object" ? (raw.cup as Raw) : null;
+  const cafeRaw = raw.cafe && typeof raw.cafe === "object" ? (raw.cafe as Raw) : null;
+  if (!cupRaw || !cafeRaw || !str(cupRaw.id) || !str(cafeRaw.id) || !str(cafeRaw.name)) {
+    return null;
+  }
+  return {
+    cup: mapCupCard(cupRaw),
+    cafe: {
+      id: String(cafeRaw.id),
+      name: String(cafeRaw.name).trim(),
+      area: [str(cafeRaw.neighborhood), str(cafeRaw.city)].filter(Boolean).join(", ") || null,
+      featuredImageUrl: str(cafeRaw.featured_image_url),
+    },
+  };
+}
+
+/** What a cup is called in a title: its first named item ("Spanish latte"),
+ * else null (callers say "A cup"). */
+export function cupLead(cup: CupCard): string | null {
+  const photoFirst = [...cup.items].sort((a, b) => Number(!a.photo) - Number(!b.photo));
+  return photoFirst.find((item) => item.label)?.label ?? null;
 }
 
 // ── Display helpers ──────────────────────────────────────────────────────
