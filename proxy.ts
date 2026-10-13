@@ -77,7 +77,8 @@ export const config = {
      *  - json/txt/xml — mapstyle.json, robots.txt and sitemap.xml are static
      *    and were each paying for an auth refresh
      *  - `.well-known/` — app-link files for iOS and Android, static
+     *  - `nk/` — the PostHog proxy (next.config.ts rewrites); no auth needed
      */
-    "/((?!api/|\\.well-known/|_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp|ico|json|txt|xml)$).*)",
+    "/((?!api/|nk/|\\.well-known/|_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp|ico|json|txt|xml)$).*)",
   ],
 };

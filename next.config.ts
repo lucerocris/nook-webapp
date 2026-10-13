@@ -90,14 +90,47 @@ const htmlLimitedBots = new RegExp(
   "i",
 );
 
+/** PostHog, served from our own origin so blockers that drop *.posthog.com
+ * don't drop the events. A deliberately bland path: blocklists match the
+ * obvious ones (/ingest, /analytics, /posthog). Keep in step with PROXY_PATH
+ * in instrumentation-client.ts and the proxy.ts matcher. */
+const POSTHOG_PROXY = "/nk";
+
 const nextConfig: NextConfig = {
   cacheComponents: true,
+  // PostHog's endpoints end in a slash (/e/, /flags/); Next's default
+  // trailing-slash redirect would bounce every event. The redirect is put
+  // back for every other path in redirects() below.
+  skipTrailingSlashRedirect: true,
   htmlLimitedBots,
   images: {
     remotePatterns,
   },
+  async rewrites() {
+    return [
+      {
+        source: `${POSTHOG_PROXY}/static/:path*`,
+        destination: "https://us-assets.i.posthog.com/static/:path*",
+      },
+      {
+        source: `${POSTHOG_PROXY}/array/:path*`,
+        destination: "https://us-assets.i.posthog.com/array/:path*",
+      },
+      {
+        source: `${POSTHOG_PROXY}/:path*`,
+        destination: "https://us.i.posthog.com/:path*",
+      },
+    ];
+  },
   async redirects() {
     return [
+      {
+        // What skipTrailingSlashRedirect turned off, for everything but the
+        // PostHog proxy: /cafes/x/ → /cafes/x, as before.
+        source: "/:path((?!nk/).+)/",
+        destination: "/:path",
+        permanent: true,
+      },
       {
         // Reviews became Cups; old links and indexed URLs keep working.
         source: "/cafes/:id/reviews",
